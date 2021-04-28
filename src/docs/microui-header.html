@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>microui-header.h</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+      <ul id="jump_to">
+        <li>
+          <a class="large" href="javascript:void(0);">Jump To &hellip;</a>
+          <a class="small" href="javascript:void(0);">+</a>
+          <div id="jump_wrapper">
+          <div id="jump_page_wrapper">
+            <div id="jump_page">
+              
+                
+                <a class="source" href="microui-header.html">
+                  microui-header.h
+                </a>
+              
+                
+                <a class="source" href="microui-source.html">
+                  microui-source.c
+                </a>
+              
+            </div>
+          </div>
+        </li>
+      </ul>
+    
+    <ul class="sections">
+        
+          <li id="title">
+              <div class="annotation">
+                  <h1>microui-header.h</h1>
+              </div>
+          </li>
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-1">&#x00a7;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-comment">/*
+** Copyright (c) 2020 rxi
+**
+** This library is free software; you can redistribute it and/or modify it
+** under the terms of the MIT license. See `microui.c` for details.
+*/</span>
+
+<span class="hljs-meta">#<span class="hljs-meta-keyword">ifndef</span> MICROUI_H</span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> MICROUI_H</span>
+
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> MU_VERSION <span class="hljs-meta-string">&quot;2.01&quot;</span></span>
+
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> MU_COMMANDLIST_SIZE     (256 * 1024)</span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> MU_ROOTLIST_SIZE        32</span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> MU_CONTAINERSTACK_SIZE  32</span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> MU_CLIPSTACK_SIZE       32</span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> MU_IDSTACK_SIZE         32</span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> MU_LAYOUTSTACK_SIZE     16</span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> MU_CONTAINERPOOL_SIZE   48</span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> MU_TREENODEPOOL_SIZE    48</span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> MU_MAX_WIDTHS           16</span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> MU_REAL                 float</span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> MU_REAL_FMT             <span class="hljs-meta-string">&quot;%.3g&quot;</span></span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> MU_SLIDER_FMT           <span class="hljs-meta-string">&quot;%.2f&quot;</span></span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> MU_MAX_FMT              127</span>
+
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> mu_stack(T, n)          struct { int idx; T items[n]; }</span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> mu_min(a, b)            ((a) &lt; (b) ? (a) : (b))</span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> mu_max(a, b)            ((a) &gt; (b) ? (a) : (b))</span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> mu_clamp(x, a, b)       mu_min(b, mu_max(a, x))</span>
+
+<span class="hljs-keyword">enum</span> {
+  MU_CLIP_PART = <span class="hljs-number">1</span>,
+  MU_CLIP_ALL
+};
+
+<span class="hljs-keyword">enum</span> {
+  MU_COMMAND_JUMP = <span class="hljs-number">1</span>,
+  MU_COMMAND_CLIP,
+  MU_COMMAND_RECT,
+  MU_COMMAND_TEXT,
+  MU_COMMAND_ICON,
+  MU_COMMAND_MAX
+};
+
+<span class="hljs-keyword">enum</span> {
+  MU_COLOR_TEXT,
+  MU_COLOR_BORDER,
+  MU_COLOR_WINDOWBG,
+  MU_COLOR_TITLEBG,
+  MU_COLOR_TITLETEXT,
+  MU_COLOR_PANELBG,
+  MU_COLOR_BUTTON,
+  MU_COLOR_BUTTONHOVER,
+  MU_COLOR_BUTTONFOCUS,
+  MU_COLOR_BASE,
+  MU_COLOR_BASEHOVER,
+  MU_COLOR_BASEFOCUS,
+  MU_COLOR_SCROLLBASE,
+  MU_COLOR_SCROLLTHUMB,
+  MU_COLOR_MAX
+};
+
+<span class="hljs-keyword">enum</span> {
+  MU_ICON_CLOSE = <span class="hljs-number">1</span>,
+  MU_ICON_CHECK,
+  MU_ICON_COLLAPSED,
+  MU_ICON_EXPANDED,
+  MU_ICON_MAX
+};
+
+<span class="hljs-keyword">enum</span> {
+  MU_RES_ACTIVE       = (<span class="hljs-number">1</span> &lt;&lt; <span class="hljs-number">0</span>),
+  MU_RES_SUBMIT       = (<span class="hljs-number">1</span> &lt;&lt; <span class="hljs-number">1</span>),
+  MU_RES_CHANGE       = (<span class="hljs-number">1</span> &lt;&lt; <span class="hljs-number">2</span>)
+};
+
+<span class="hljs-keyword">enum</span> {
+  MU_OPT_ALIGNCENTER  = (<span class="hljs-number">1</span> &lt;&lt; <span class="hljs-number">0</span>),
+  MU_OPT_ALIGNRIGHT   = (<span class="hljs-number">1</span> &lt;&lt; <span class="hljs-number">1</span>),
+  MU_OPT_NOINTERACT   = (<span class="hljs-number">1</span> &lt;&lt; <span class="hljs-number">2</span>),
+  MU_OPT_NOFRAME      = (<span class="hljs-number">1</span> &lt;&lt; <span class="hljs-number">3</span>),
+  MU_OPT_NORESIZE     = (<span class="hljs-number">1</span> &lt;&lt; <span class="hljs-number">4</span>),
+  MU_OPT_NOSCROLL     = (<span class="hljs-number">1</span> &lt;&lt; <span class="hljs-number">5</span>),
+  MU_OPT_NOCLOSE      = (<span class="hljs-number">1</span> &lt;&lt; <span class="hljs-number">6</span>),
+  MU_OPT_NOTITLE      = (<span class="hljs-number">1</span> &lt;&lt; <span class="hljs-number">7</span>),
+  MU_OPT_HOLDFOCUS    = (<span class="hljs-number">1</span> &lt;&lt; <span class="hljs-number">8</span>),
+  MU_OPT_AUTOSIZE     = (<span class="hljs-number">1</span> &lt;&lt; <span class="hljs-number">9</span>),
+  MU_OPT_POPUP        = (<span class="hljs-number">1</span> &lt;&lt; <span class="hljs-number">10</span>),
+  MU_OPT_CLOSED       = (<span class="hljs-number">1</span> &lt;&lt; <span class="hljs-number">11</span>),
+  MU_OPT_EXPANDED     = (<span class="hljs-number">1</span> &lt;&lt; <span class="hljs-number">12</span>)
+};
+
+<span class="hljs-keyword">enum</span> {
+  MU_MOUSE_LEFT       = (<span class="hljs-number">1</span> &lt;&lt; <span class="hljs-number">0</span>),
+  MU_MOUSE_RIGHT      = (<span class="hljs-number">1</span> &lt;&lt; <span class="hljs-number">1</span>),
+  MU_MOUSE_MIDDLE     = (<span class="hljs-number">1</span> &lt;&lt; <span class="hljs-number">2</span>)
+};
+
+<span class="hljs-keyword">enum</span> {
+  MU_KEY_SHIFT        = (<span class="hljs-number">1</span> &lt;&lt; <span class="hljs-number">0</span>),
+  MU_KEY_CTRL         = (<span class="hljs-number">1</span> &lt;&lt; <span class="hljs-number">1</span>),
+  MU_KEY_ALT          = (<span class="hljs-number">1</span> &lt;&lt; <span class="hljs-number">2</span>),
+  MU_KEY_BACKSPACE    = (<span class="hljs-number">1</span> &lt;&lt; <span class="hljs-number">3</span>),
+  MU_KEY_RETURN       = (<span class="hljs-number">1</span> &lt;&lt; <span class="hljs-number">4</span>)
+};
+
+
+<span class="hljs-keyword">typedef</span> <span class="hljs-keyword">struct</span> mu_Context mu_Context;
+<span class="hljs-keyword">typedef</span> <span class="hljs-keyword">unsigned</span> mu_Id;
+<span class="hljs-keyword">typedef</span> MU_REAL mu_Real;
+<span class="hljs-keyword">typedef</span> <span class="hljs-keyword">void</span>* mu_Font;
+
+<span class="hljs-keyword">typedef</span> <span class="hljs-keyword">struct</span> { <span class="hljs-keyword">int</span> x, y; } mu_Vec2;
+<span class="hljs-keyword">typedef</span> <span class="hljs-keyword">struct</span> { <span class="hljs-keyword">int</span> x, y, w, h; } mu_Rect;
+<span class="hljs-keyword">typedef</span> <span class="hljs-keyword">struct</span> { <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">char</span> r, g, b, a; } mu_Color;
+<span class="hljs-keyword">typedef</span> <span class="hljs-keyword">struct</span> { mu_Id <span class="hljs-keyword">id</span>; <span class="hljs-keyword">int</span> last_update; } mu_PoolItem;
+
+<span class="hljs-keyword">typedef</span> <span class="hljs-keyword">struct</span> { <span class="hljs-keyword">int</span> type, size; } mu_BaseCommand;
+<span class="hljs-keyword">typedef</span> <span class="hljs-keyword">struct</span> { mu_BaseCommand base; <span class="hljs-keyword">void</span> *dst; } mu_JumpCommand;
+<span class="hljs-keyword">typedef</span> <span class="hljs-keyword">struct</span> { mu_BaseCommand base; mu_Rect rect; } mu_ClipCommand;
+<span class="hljs-keyword">typedef</span> <span class="hljs-keyword">struct</span> { mu_BaseCommand base; mu_Rect rect; mu_Color color; } mu_RectCommand;
+<span class="hljs-keyword">typedef</span> <span class="hljs-keyword">struct</span> { mu_BaseCommand base; mu_Font font; mu_Vec2 pos; mu_Color color; <span class="hljs-keyword">char</span> str[<span class="hljs-number">1</span>]; } mu_TextCommand;
+<span class="hljs-keyword">typedef</span> <span class="hljs-keyword">struct</span> { mu_BaseCommand base; mu_Rect rect; <span class="hljs-keyword">int</span> <span class="hljs-keyword">id</span>; mu_Color color; } mu_IconCommand;
+
+<span class="hljs-keyword">typedef</span> <span class="hljs-keyword">union</span> {
+  <span class="hljs-keyword">int</span> type;
+  mu_BaseCommand base;
+  mu_JumpCommand jump;
+  mu_ClipCommand clip;
+  mu_RectCommand rect;
+  mu_TextCommand text;
+  mu_IconCommand icon;
+} mu_Command;
+
+<span class="hljs-keyword">typedef</span> <span class="hljs-keyword">struct</span> {
+  mu_Rect body;
+  mu_Rect next;
+  mu_Vec2 position;
+  mu_Vec2 size;
+  mu_Vec2 max;
+  <span class="hljs-keyword">int</span> widths[MU_MAX_WIDTHS];
+  <span class="hljs-keyword">int</span> items;
+  <span class="hljs-keyword">int</span> item_index;
+  <span class="hljs-keyword">int</span> next_row;
+  <span class="hljs-keyword">int</span> next_type;
+  <span class="hljs-keyword">int</span> indent;
+} mu_Layout;
+
+<span class="hljs-keyword">typedef</span> <span class="hljs-keyword">struct</span> {
+  mu_Command *head, *tail;
+  mu_Rect rect;
+  mu_Rect body;
+  mu_Vec2 content_size;
+  mu_Vec2 scroll;
+  <span class="hljs-keyword">int</span> zindex;
+  <span class="hljs-keyword">int</span> open;
+} mu_Container;
+
+<span class="hljs-keyword">typedef</span> <span class="hljs-keyword">struct</span> {
+  mu_Font font;
+  mu_Vec2 size;
+  <span class="hljs-keyword">int</span> padding;
+  <span class="hljs-keyword">int</span> spacing;
+  <span class="hljs-keyword">int</span> indent;
+  <span class="hljs-keyword">int</span> title_height;
+  <span class="hljs-keyword">int</span> scrollbar_size;
+  <span class="hljs-keyword">int</span> thumb_size;
+  mu_Color colors[MU_COLOR_MAX];
+} mu_Style;
+
+<span class="hljs-keyword">struct</span> mu_Context {
+  <span class="hljs-comment">/* callbacks */</span>
+  <span class="hljs-keyword">int</span> (*text_width)(mu_Font font, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *str, <span class="hljs-keyword">int</span> len);
+  <span class="hljs-keyword">int</span> (*text_height)(mu_Font font);
+  <span class="hljs-keyword">void</span> (*draw_frame)(mu_Context *ctx, mu_Rect rect, <span class="hljs-keyword">int</span> colorid);
+  <span class="hljs-comment">/* core state */</span>
+  mu_Style _style;
+  mu_Style *style;
+  mu_Id hover;
+  mu_Id focus;
+  mu_Id last_id;
+  mu_Rect last_rect;
+  <span class="hljs-keyword">int</span> last_zindex;
+  <span class="hljs-keyword">int</span> updated_focus;
+  <span class="hljs-keyword">int</span> frame;
+  mu_Container *hover_root;
+  mu_Container *next_hover_root;
+  mu_Container *scroll_target;
+  <span class="hljs-keyword">char</span> number_edit_buf[MU_MAX_FMT];
+  mu_Id number_edit;
+  <span class="hljs-comment">/* stacks */</span>
+  mu_stack(<span class="hljs-keyword">char</span>, MU_COMMANDLIST_SIZE) command_list;
+  mu_stack(mu_Container*, MU_ROOTLIST_SIZE) root_list;
+  mu_stack(mu_Container*, MU_CONTAINERSTACK_SIZE) container_stack;
+  mu_stack(mu_Rect, MU_CLIPSTACK_SIZE) clip_stack;
+  mu_stack(mu_Id, MU_IDSTACK_SIZE) id_stack;
+  mu_stack(mu_Layout, MU_LAYOUTSTACK_SIZE) layout_stack;
+  <span class="hljs-comment">/* retained state pools */</span>
+  mu_PoolItem container_pool[MU_CONTAINERPOOL_SIZE];
+  mu_Container containers[MU_CONTAINERPOOL_SIZE];
+  mu_PoolItem treenode_pool[MU_TREENODEPOOL_SIZE];
+  <span class="hljs-comment">/* input state */</span>
+  mu_Vec2 mouse_pos;
+  mu_Vec2 last_mouse_pos;
+  mu_Vec2 mouse_delta;
+  mu_Vec2 scroll_delta;
+  <span class="hljs-keyword">int</span> mouse_down;
+  <span class="hljs-keyword">int</span> mouse_pressed;
+  <span class="hljs-keyword">int</span> key_down;
+  <span class="hljs-keyword">int</span> key_pressed;
+  <span class="hljs-keyword">char</span> input_text[<span class="hljs-number">32</span>];
+};
+
+
+mu_Vec2 mu_vec2(<span class="hljs-keyword">int</span> x, <span class="hljs-keyword">int</span> y);
+mu_Rect mu_rect(<span class="hljs-keyword">int</span> x, <span class="hljs-keyword">int</span> y, <span class="hljs-keyword">int</span> w, <span class="hljs-keyword">int</span> h);
+mu_Color mu_color(<span class="hljs-keyword">int</span> r, <span class="hljs-keyword">int</span> g, <span class="hljs-keyword">int</span> b, <span class="hljs-keyword">int</span> a);
+
+<span class="hljs-keyword">void</span> mu_init(mu_Context *ctx);
+<span class="hljs-keyword">void</span> mu_begin(mu_Context *ctx);
+<span class="hljs-keyword">void</span> mu_end(mu_Context *ctx);
+<span class="hljs-keyword">void</span> mu_set_focus(mu_Context *ctx, mu_Id <span class="hljs-keyword">id</span>);
+mu_Id mu_get_id(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">void</span> *data, <span class="hljs-keyword">int</span> size);
+<span class="hljs-keyword">void</span> mu_push_id(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">void</span> *data, <span class="hljs-keyword">int</span> size);
+<span class="hljs-keyword">void</span> mu_pop_id(mu_Context *ctx);
+<span class="hljs-keyword">void</span> mu_push_clip_rect(mu_Context *ctx, mu_Rect rect);
+<span class="hljs-keyword">void</span> mu_pop_clip_rect(mu_Context *ctx);
+mu_Rect mu_get_clip_rect(mu_Context *ctx);
+<span class="hljs-keyword">int</span> mu_check_clip(mu_Context *ctx, mu_Rect r);
+mu_Container* mu_get_current_container(mu_Context *ctx);
+mu_Container* mu_get_container(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *name);
+<span class="hljs-keyword">void</span> mu_bring_to_front(mu_Context *ctx, mu_Container *cnt);
+
+<span class="hljs-keyword">int</span> mu_pool_init(mu_Context *ctx, mu_PoolItem *items, <span class="hljs-keyword">int</span> len, mu_Id <span class="hljs-keyword">id</span>);
+<span class="hljs-keyword">int</span> mu_pool_get(mu_Context *ctx, mu_PoolItem *items, <span class="hljs-keyword">int</span> len, mu_Id <span class="hljs-keyword">id</span>);
+<span class="hljs-keyword">void</span> mu_pool_update(mu_Context *ctx, mu_PoolItem *items, <span class="hljs-keyword">int</span> idx);
+
+<span class="hljs-keyword">void</span> mu_input_mousemove(mu_Context *ctx, <span class="hljs-keyword">int</span> x, <span class="hljs-keyword">int</span> y);
+<span class="hljs-keyword">void</span> mu_input_mousedown(mu_Context *ctx, <span class="hljs-keyword">int</span> x, <span class="hljs-keyword">int</span> y, <span class="hljs-keyword">int</span> btn);
+<span class="hljs-keyword">void</span> mu_input_mouseup(mu_Context *ctx, <span class="hljs-keyword">int</span> x, <span class="hljs-keyword">int</span> y, <span class="hljs-keyword">int</span> btn);
+<span class="hljs-keyword">void</span> mu_input_scroll(mu_Context *ctx, <span class="hljs-keyword">int</span> x, <span class="hljs-keyword">int</span> y);
+<span class="hljs-keyword">void</span> mu_input_keydown(mu_Context *ctx, <span class="hljs-keyword">int</span> key);
+<span class="hljs-keyword">void</span> mu_input_keyup(mu_Context *ctx, <span class="hljs-keyword">int</span> key);
+<span class="hljs-keyword">void</span> mu_input_text(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *text);
+
+mu_Command* mu_push_command(mu_Context *ctx, <span class="hljs-keyword">int</span> type, <span class="hljs-keyword">int</span> size);
+<span class="hljs-keyword">int</span> mu_next_command(mu_Context *ctx, mu_Command **cmd);
+<span class="hljs-keyword">void</span> mu_set_clip(mu_Context *ctx, mu_Rect rect);
+<span class="hljs-keyword">void</span> mu_draw_rect(mu_Context *ctx, mu_Rect rect, mu_Color color);
+<span class="hljs-keyword">void</span> mu_draw_box(mu_Context *ctx, mu_Rect rect, mu_Color color);
+<span class="hljs-keyword">void</span> mu_draw_text(mu_Context *ctx, mu_Font font, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *str, <span class="hljs-keyword">int</span> len, mu_Vec2 pos, mu_Color color);
+<span class="hljs-keyword">void</span> mu_draw_icon(mu_Context *ctx, <span class="hljs-keyword">int</span> <span class="hljs-keyword">id</span>, mu_Rect rect, mu_Color color);
+
+<span class="hljs-keyword">void</span> mu_layout_row(mu_Context *ctx, <span class="hljs-keyword">int</span> items, <span class="hljs-keyword">const</span> <span class="hljs-keyword">int</span> *widths, <span class="hljs-keyword">int</span> height);
+<span class="hljs-keyword">void</span> mu_layout_width(mu_Context *ctx, <span class="hljs-keyword">int</span> width);
+<span class="hljs-keyword">void</span> mu_layout_height(mu_Context *ctx, <span class="hljs-keyword">int</span> height);
+<span class="hljs-keyword">void</span> mu_layout_begin_column(mu_Context *ctx);
+<span class="hljs-keyword">void</span> mu_layout_end_column(mu_Context *ctx);
+<span class="hljs-keyword">void</span> mu_layout_set_next(mu_Context *ctx, mu_Rect r, <span class="hljs-keyword">int</span> relative);
+mu_Rect mu_layout_next(mu_Context *ctx);
+
+<span class="hljs-keyword">void</span> mu_draw_control_frame(mu_Context *ctx, mu_Id <span class="hljs-keyword">id</span>, mu_Rect rect, <span class="hljs-keyword">int</span> colorid, <span class="hljs-keyword">int</span> opt);
+<span class="hljs-keyword">void</span> mu_draw_control_text(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *str, mu_Rect rect, <span class="hljs-keyword">int</span> colorid, <span class="hljs-keyword">int</span> opt);
+<span class="hljs-keyword">int</span> mu_mouse_over(mu_Context *ctx, mu_Rect rect);
+<span class="hljs-keyword">void</span> mu_update_control(mu_Context *ctx, mu_Id <span class="hljs-keyword">id</span>, mu_Rect rect, <span class="hljs-keyword">int</span> opt);
+
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> mu_button(ctx, label)             mu_button_ex(ctx, label, 0, MU_OPT_ALIGNCENTER)</span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> mu_textbox(ctx, buf, bufsz)       mu_textbox_ex(ctx, buf, bufsz, 0)</span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> mu_slider(ctx, value, lo, hi)     mu_slider_ex(ctx, value, lo, hi, 0, MU_SLIDER_FMT, MU_OPT_ALIGNCENTER)</span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> mu_number(ctx, value, step)       mu_number_ex(ctx, value, step, MU_SLIDER_FMT, MU_OPT_ALIGNCENTER)</span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> mu_header(ctx, label)             mu_header_ex(ctx, label, 0)</span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> mu_begin_treenode(ctx, label)     mu_begin_treenode_ex(ctx, label, 0)</span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> mu_begin_window(ctx, title, rect) mu_begin_window_ex(ctx, title, rect, 0)</span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> mu_begin_panel(ctx, name)         mu_begin_panel_ex(ctx, name, 0)</span>
+
+<span class="hljs-keyword">void</span> mu_text(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *text);
+<span class="hljs-keyword">void</span> mu_label(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *text);
+<span class="hljs-keyword">int</span> mu_button_ex(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *label, <span class="hljs-keyword">int</span> icon, <span class="hljs-keyword">int</span> opt);
+<span class="hljs-keyword">int</span> mu_checkbox(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *label, <span class="hljs-keyword">int</span> *state);
+<span class="hljs-keyword">int</span> mu_textbox_raw(mu_Context *ctx, <span class="hljs-keyword">char</span> *buf, <span class="hljs-keyword">int</span> bufsz, mu_Id <span class="hljs-keyword">id</span>, mu_Rect r, <span class="hljs-keyword">int</span> opt);
+<span class="hljs-keyword">int</span> mu_textbox_ex(mu_Context *ctx, <span class="hljs-keyword">char</span> *buf, <span class="hljs-keyword">int</span> bufsz, <span class="hljs-keyword">int</span> opt);
+<span class="hljs-keyword">int</span> mu_slider_ex(mu_Context *ctx, mu_Real *value, mu_Real low, mu_Real high, mu_Real step, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *fmt, <span class="hljs-keyword">int</span> opt);
+<span class="hljs-keyword">int</span> mu_number_ex(mu_Context *ctx, mu_Real *value, mu_Real step, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *fmt, <span class="hljs-keyword">int</span> opt);
+<span class="hljs-keyword">int</span> mu_header_ex(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *label, <span class="hljs-keyword">int</span> opt);
+<span class="hljs-keyword">int</span> mu_begin_treenode_ex(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *label, <span class="hljs-keyword">int</span> opt);
+<span class="hljs-keyword">void</span> mu_end_treenode(mu_Context *ctx);
+<span class="hljs-keyword">int</span> mu_begin_window_ex(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *title, mu_Rect rect, <span class="hljs-keyword">int</span> opt);
+<span class="hljs-keyword">void</span> mu_end_window(mu_Context *ctx);
+<span class="hljs-keyword">void</span> mu_open_popup(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *name);
+<span class="hljs-keyword">int</span> mu_begin_popup(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *name);
+<span class="hljs-keyword">void</span> mu_end_popup(mu_Context *ctx);
+<span class="hljs-keyword">void</span> mu_begin_panel_ex(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *name, <span class="hljs-keyword">int</span> opt);
+<span class="hljs-keyword">void</span> mu_end_panel(mu_Context *ctx);
+
+<span class="hljs-meta">#<span class="hljs-meta-keyword">endif</span></span></pre></div></div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>

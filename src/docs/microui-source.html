@@ -1,0 +1,1781 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>microui-source.c</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+      <ul id="jump_to">
+        <li>
+          <a class="large" href="javascript:void(0);">Jump To &hellip;</a>
+          <a class="small" href="javascript:void(0);">+</a>
+          <div id="jump_wrapper">
+          <div id="jump_page_wrapper">
+            <div id="jump_page">
+              
+                
+                <a class="source" href="microui-header.html">
+                  microui-header.h
+                </a>
+              
+                
+                <a class="source" href="microui-source.html">
+                  microui-source.c
+                </a>
+              
+            </div>
+          </div>
+        </li>
+      </ul>
+    
+    <ul class="sections">
+        
+          <li id="title">
+              <div class="annotation">
+                  <h1>microui-source.c</h1>
+              </div>
+          </li>
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-1">&#x00a7;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-comment">/*
+** Copyright (c) 2020 rxi
+**
+** Permission is hereby granted, free of charge, to any person obtaining a copy
+** of this software and associated documentation files (the &quot;Software&quot;), to
+** deal in the Software without restriction, including without limitation the
+** rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+** sell copies of the Software, and to permit persons to whom the Software is
+** furnished to do so, subject to the following conditions:
+**
+** The above copyright notice and this permission notice shall be included in
+** all copies or substantial portions of the Software.
+**
+** THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+** IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+** FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+** AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+** LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+** FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+** IN THE SOFTWARE.
+*/</span>
+
+<span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;stdio.h&gt;</span></span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;stdlib.h&gt;</span></span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;string.h&gt;</span></span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&quot;microui-header.h&quot;</span></span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-2">&#x00a7;</a>
+              </div>
+              <p>Poor man’s <code>assert</code></p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> expect(x) do {                                               \
+    <span class="hljs-meta-keyword">if</span> (!(x)) {                                                      \
+      fprintf(stderr, <span class="hljs-meta-string">&quot;Fatal error: %s:%d: assertion &#x27;%s&#x27; failed\n&quot;</span>, \
+        __FILE__, __LINE__, #x);                                     \
+      abort();                                                       \
+    }                                                                \
+  } while (0)</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-3">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-3">&#x00a7;</a>
+              </div>
+              <h1 id="usage">Usage</h1>
+<ul>
+<li><strong><a href="#overview">Overview</a></strong></li>
+<li><strong><a href="#getting-started">Getting Started</a></strong></li>
+<li><strong><a href="#layout-system">Layout System</a></strong></li>
+<li><strong><a href="#style-customisation">Style Customisation</a></strong></li>
+<li><strong><a href="#custom-controls">Custom Controls</a></strong></li>
+</ul>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-4">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-4">&#x00a7;</a>
+              </div>
+              <h2 id="initializing-mu_context">Initializing <code>mu_Context</code></h2>
+<p>Before use a <code>mu_Context</code> should be initialised:</p>
+<pre><code class="language-c">mu_Context *ctx = <span class="hljs-built_in">malloc</span>(<span class="hljs-keyword">sizeof</span>(mu_Context));
+mu_init(ctx);
+</code></pre>
+<p>Following which the context’s <code>text_width</code> and <code>text_height</code> callback functions
+should be set:</p>
+<pre><code class="language-c">ctx-&gt;text_width = text_width;
+ctx-&gt;text_height = text_height;
+</code></pre>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+<span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">draw_frame</span><span class="hljs-params">(mu_Context *ctx, mu_Rect rect, <span class="hljs-keyword">int</span> colorid)</span></span>;
+<span class="hljs-keyword">static</span> mu_Style default_style;
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_init</span><span class="hljs-params">(mu_Context *ctx)</span> </span>{
+  <span class="hljs-built_in">memset</span>(ctx, <span class="hljs-number">0</span>, <span class="hljs-keyword">sizeof</span>(*ctx));
+  ctx-&gt;draw_frame = draw_frame;
+  ctx-&gt;_style = default_style;
+  ctx-&gt;style = &amp;ctx-&gt;_style;
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-5">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-5">&#x00a7;</a>
+              </div>
+              <p>The default style is encoded in a struct which represents TODO</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">static</span> mu_Style default_style = {
+  <span class="hljs-comment">/* font | size | padding | spacing | indent */</span>
+  <span class="hljs-literal">NULL</span>, { <span class="hljs-number">68</span>, <span class="hljs-number">10</span> }, <span class="hljs-number">5</span>, <span class="hljs-number">4</span>, <span class="hljs-number">24</span>,
+  <span class="hljs-comment">/* title_height | scrollbar_size | thumb_size */</span>
+  <span class="hljs-number">24</span>, <span class="hljs-number">12</span>, <span class="hljs-number">8</span>,
+  {
+    { <span class="hljs-number">230</span>, <span class="hljs-number">230</span>, <span class="hljs-number">230</span>, <span class="hljs-number">255</span> }, <span class="hljs-comment">/* MU_COLOR_TEXT */</span>
+    { <span class="hljs-number">25</span>,  <span class="hljs-number">25</span>,  <span class="hljs-number">25</span>,  <span class="hljs-number">255</span> }, <span class="hljs-comment">/* MU_COLOR_BORDER */</span>
+    { <span class="hljs-number">50</span>,  <span class="hljs-number">50</span>,  <span class="hljs-number">50</span>,  <span class="hljs-number">255</span> }, <span class="hljs-comment">/* MU_COLOR_WINDOWBG */</span>
+    { <span class="hljs-number">25</span>,  <span class="hljs-number">25</span>,  <span class="hljs-number">25</span>,  <span class="hljs-number">255</span> }, <span class="hljs-comment">/* MU_COLOR_TITLEBG */</span>
+    { <span class="hljs-number">240</span>, <span class="hljs-number">240</span>, <span class="hljs-number">240</span>, <span class="hljs-number">255</span> }, <span class="hljs-comment">/* MU_COLOR_TITLETEXT */</span>
+    { <span class="hljs-number">0</span>,   <span class="hljs-number">0</span>,   <span class="hljs-number">0</span>,   <span class="hljs-number">0</span>   }, <span class="hljs-comment">/* MU_COLOR_PANELBG */</span>
+    { <span class="hljs-number">75</span>,  <span class="hljs-number">75</span>,  <span class="hljs-number">75</span>,  <span class="hljs-number">255</span> }, <span class="hljs-comment">/* MU_COLOR_BUTTON */</span>
+    { <span class="hljs-number">95</span>,  <span class="hljs-number">95</span>,  <span class="hljs-number">95</span>,  <span class="hljs-number">255</span> }, <span class="hljs-comment">/* MU_COLOR_BUTTONHOVER */</span>
+    { <span class="hljs-number">115</span>, <span class="hljs-number">115</span>, <span class="hljs-number">115</span>, <span class="hljs-number">255</span> }, <span class="hljs-comment">/* MU_COLOR_BUTTONFOCUS */</span>
+    { <span class="hljs-number">30</span>,  <span class="hljs-number">30</span>,  <span class="hljs-number">30</span>,  <span class="hljs-number">255</span> }, <span class="hljs-comment">/* MU_COLOR_BASE */</span>
+    { <span class="hljs-number">35</span>,  <span class="hljs-number">35</span>,  <span class="hljs-number">35</span>,  <span class="hljs-number">255</span> }, <span class="hljs-comment">/* MU_COLOR_BASEHOVER */</span>
+    { <span class="hljs-number">40</span>,  <span class="hljs-number">40</span>,  <span class="hljs-number">40</span>,  <span class="hljs-number">255</span> }, <span class="hljs-comment">/* MU_COLOR_BASEFOCUS */</span>
+    { <span class="hljs-number">43</span>,  <span class="hljs-number">43</span>,  <span class="hljs-number">43</span>,  <span class="hljs-number">255</span> }, <span class="hljs-comment">/* MU_COLOR_SCROLLBASE */</span>
+    { <span class="hljs-number">30</span>,  <span class="hljs-number">30</span>,  <span class="hljs-number">30</span>,  <span class="hljs-number">255</span> }  <span class="hljs-comment">/* MU_COLOR_SCROLLTHUMB */</span>
+  }
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-6">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-6">&#x00a7;</a>
+              </div>
+              <h2 id="the-main-loop">The Main Loop</h2>
+<p>The overall structure when using the library is as follows:</p>
+<pre><code>initialise `mu_Context`
+
+main loop:
+  <span class="hljs-number">1.</span> call `mu_input_...` functions
+  <span class="hljs-number">2.</span> call `mu_begin()`
+  <span class="hljs-number">3.</span> process ui
+  <span class="hljs-number">4.</span> call `mu_end()`
+  <span class="hljs-number">5.</span> iterate commands <span class="hljs-keyword">using</span> `mu_command_next()`
+</code></pre>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-7">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-7">&#x00a7;</a>
+              </div>
+              <h3 id="1-input-handling-with-mu_input_">1. Input handling with <code>mu_input_...</code></h3>
+<p>In your main loop you should first pass user input to microui using the
+<code>mu_input_...</code> functions. It is safe to call the input functions multiple times
+if the same input event occurs in a single frame.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+
+<span class="hljs-comment">/*============================================================================
+** input handlers
+**============================================================================*/</span>
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_input_mousemove</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">int</span> x, <span class="hljs-keyword">int</span> y)</span> </span>{
+  ctx-&gt;mouse_pos = mu_vec2(x, y);
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_input_mousedown</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">int</span> x, <span class="hljs-keyword">int</span> y, <span class="hljs-keyword">int</span> btn)</span> </span>{
+  mu_input_mousemove(ctx, x, y);
+  ctx-&gt;mouse_down |= btn;
+  ctx-&gt;mouse_pressed |= btn;
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_input_mouseup</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">int</span> x, <span class="hljs-keyword">int</span> y, <span class="hljs-keyword">int</span> btn)</span> </span>{
+  mu_input_mousemove(ctx, x, y);
+  ctx-&gt;mouse_down &amp;= ~btn;
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_input_scroll</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">int</span> x, <span class="hljs-keyword">int</span> y)</span> </span>{
+  ctx-&gt;scroll_delta.x += x;
+  ctx-&gt;scroll_delta.y += y;
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_input_keydown</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">int</span> key)</span> </span>{
+  ctx-&gt;key_pressed |= key;
+  ctx-&gt;key_down |= key;
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_input_keyup</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">int</span> key)</span> </span>{
+  ctx-&gt;key_down &amp;= ~key;
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_input_text</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *text)</span> </span>{
+  <span class="hljs-keyword">int</span> len = <span class="hljs-built_in">strlen</span>(ctx-&gt;input_text);
+  <span class="hljs-keyword">int</span> size = <span class="hljs-built_in">strlen</span>(text) + <span class="hljs-number">1</span>;
+  expect(len + size &lt;= (<span class="hljs-keyword">int</span>) <span class="hljs-keyword">sizeof</span>(ctx-&gt;input_text));
+  <span class="hljs-built_in">memcpy</span>(ctx-&gt;input_text + len, text, size);
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-8">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-8">&#x00a7;</a>
+              </div>
+              <h2 id="2-call-mu_begin">2. Call <code>mu_begin</code></h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-9">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-9">&#x00a7;</a>
+              </div>
+              <p>After handling the input the <code>mu_begin()</code> function must be called before
+processing your UI:</p>
+<pre><code class="language-c">mu_begin(ctx);
+</code></pre>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_begin</span><span class="hljs-params">(mu_Context *ctx)</span> </span>{
+  expect(ctx-&gt;text_width &amp;&amp; ctx-&gt;text_height);
+  ctx-&gt;command_list.idx = <span class="hljs-number">0</span>;
+  ctx-&gt;root_list.idx = <span class="hljs-number">0</span>;
+  ctx-&gt;scroll_target = <span class="hljs-literal">NULL</span>;
+  ctx-&gt;hover_root = ctx-&gt;next_hover_root;
+  ctx-&gt;next_hover_root = <span class="hljs-literal">NULL</span>;
+  ctx-&gt;mouse_delta.x = ctx-&gt;mouse_pos.x - ctx-&gt;last_mouse_pos.x;
+  ctx-&gt;mouse_delta.y = ctx-&gt;mouse_pos.y - ctx-&gt;last_mouse_pos.y;
+  ctx-&gt;frame++;
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-10">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-10">&#x00a7;</a>
+              </div>
+              <p>Before any controls can be used we must begin a window using one of the
+<code>mu_begin_window...</code> or <code>mu_begin_popup...</code> functions. The <code>mu_begin_...</code> window
+functions return a truthy value if the window is open, if this is not the case
+we should not process the window any further. When we are finished processing
+the window’s ui the <code>mu_end_...</code> window function should be called.</p>
+<pre><code class="language-c"><span class="hljs-keyword">if</span> (mu_begin_window(ctx, <span class="hljs-string">&quot;My Window&quot;</span>, mu_rect(<span class="hljs-number">10</span>, <span class="hljs-number">10</span>, <span class="hljs-number">300</span>, <span class="hljs-number">400</span>))) {
+  <span class="hljs-comment">/* process ui here... */</span>
+  mu_end_window(ctx);
+}
+</code></pre>
+<p>It is safe to nest <code>mu_begin_window()</code> calls, this can be useful for things like
+context menus; the windows will still render separate from one another like
+normal.</p>
+<p>While inside a window block we can safely process controls. Controls that allow
+user interaction return a bitset of <code>MU_RES_...</code> values. Some controls — such
+as buttons — can only potentially return a single <code>MU_RES_...</code>, thus their
+return value can be treated as a boolean:</p>
+<pre><code class="language-c"><span class="hljs-keyword">if</span> (mu_button(ctx, <span class="hljs-string">&quot;My Button&quot;</span>)) {
+  <span class="hljs-built_in">printf</span>(<span class="hljs-string">&quot;&#x27;My Button&#x27; was pressed\n&quot;</span>);
+}
+</code></pre>
+<p>The library generates unique IDs for controls internally to keep track of which
+are focused, hovered, etc. These are typically generated from the name/label
+passed to the function, or, in the case of sliders and checkboxes the value
+pointer. An issue arises then if you have several buttons in a window or panel
+that use the same label. The <code>mu_push_id()</code> and <code>mu_pop_id()</code> functions are
+provided for such situations, allowing you to push additional data that will be
+mixed into the unique ID:</p>
+<pre><code class="language-c"><span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; <span class="hljs-number">10</span>; i++) {
+  mu_push_id(ctx, &amp;i, <span class="hljs-keyword">sizeof</span>(i));
+  <span class="hljs-keyword">if</span> (mu_button(ctx, <span class="hljs-string">&quot;x&quot;</span>)) {
+    <span class="hljs-built_in">printf</span>(<span class="hljs-string">&quot;Pressed button %d\n&quot;</span>, i);
+  }
+  mu_pop_id(ctx);
+}
+</code></pre>
+<p>When we’re finished processing the UI for this frame the <code>mu_end()</code> function
+should be called:</p>
+<pre><code class="language-c">mu_end(ctx);
+</code></pre>
+<p>When we’re ready to draw the UI the <code>mu_next_command()</code> can be used to iterate
+the resultant commands. The function expects a <code>mu_Command</code> pointer initialised
+to <code>NULL</code>. It is safe to iterate through the commands list any number of times:</p>
+<pre><code class="language-c">mu_Command *cmd = <span class="hljs-literal">NULL</span>;
+<span class="hljs-keyword">while</span> (mu_next_command(ctx, &amp;cmd)) {
+  <span class="hljs-keyword">if</span> (cmd-&gt;type == MU_COMMAND_TEXT) {
+    render_text(cmd-&gt;text.font, cmd-&gt;text.text, cmd-&gt;text.pos.x, cmd-&gt;text.pos.y, cmd-&gt;text.color);
+  }
+  <span class="hljs-keyword">if</span> (cmd-&gt;type == MU_COMMAND_RECT) {
+    render_rect(cmd-&gt;rect.rect, cmd-&gt;rect.color);
+  }
+  <span class="hljs-keyword">if</span> (cmd-&gt;type == MU_COMMAND_ICON) {
+    render_icon(cmd-&gt;icon.id, cmd-&gt;icon.rect, cmd-&gt;icon.color);
+  }
+  <span class="hljs-keyword">if</span> (cmd-&gt;type == MU_COMMAND_CLIP) {
+    set_clip_rect(cmd-&gt;clip.rect);
+  }
+}
+</code></pre>
+<p>See the <a href="../demo"><code>demo</code></a> directory for a usage example.</p>
+<h2 id="layout-system">Layout System</h2>
+<p>The layout system is primarily based around <em>rows</em> — Each row
+can contain a number of <em>items</em> or <em>columns</em> each column can itself
+contain a number of rows and so forth. A row is initialised using the
+<code>mu_layout_row()</code> function, the user should specify the number of items
+on the row, an array containing the width of each item, and the height
+of the row:</p>
+<pre><code class="language-c"><span class="hljs-comment">/* initialise a row of 3 items: the first item with a width
+** of 90 and the remaining two with the width of 100 */</span>
+mu_layout_row(ctx, <span class="hljs-number">3</span>, (<span class="hljs-keyword">int</span>[]) { <span class="hljs-number">90</span>, <span class="hljs-number">100</span>, <span class="hljs-number">100</span> }, <span class="hljs-number">0</span>);
+</code></pre>
+<p>When a row is filled the next row is started, for example, in the above
+code 6 buttons immediately after would result in two rows. The function
+can be called again to begin a new row.</p>
+<p>As well as absolute values, width and height can be specified as <code>0</code>
+which will result in the Context’s <code>style.size</code> value being used, or a
+negative value which will size the item relative to the right/bottom edge,
+thus if we wanted a row with a small button at the left, a textbox filling
+most the row and a larger button at the right, we could do the following:</p>
+<pre><code class="language-c">mu_layout_row(ctx, <span class="hljs-number">3</span>, (<span class="hljs-keyword">int</span>[]) { <span class="hljs-number">30</span>, <span class="hljs-number">-90</span>, <span class="hljs-number">-1</span> }, <span class="hljs-number">0</span>);
+mu_button(ctx, <span class="hljs-string">&quot;X&quot;</span>);
+mu_textbox(ctx, buf, <span class="hljs-keyword">sizeof</span>(buf));
+mu_button(ctx, <span class="hljs-string">&quot;Submit&quot;</span>);
+</code></pre>
+<p>If the <code>items</code> parameter is <code>0</code>, the <code>widths</code> parameter is ignored
+and controls will continue to be added to the row at the width last
+specified by <code>mu_layout_width()</code> or <code>style.size.x</code> if this function has
+not been called:</p>
+<pre><code class="language-c">mu_layout_row(ctx, <span class="hljs-number">0</span>, <span class="hljs-literal">NULL</span>, <span class="hljs-number">0</span>);
+mu_layout_width(ctx, <span class="hljs-number">-90</span>);
+mu_textbox(ctx, buf, <span class="hljs-keyword">sizeof</span>(buf));
+mu_layout_width(ctx, <span class="hljs-number">-1</span>);
+mu_button(ctx, <span class="hljs-string">&quot;Submit&quot;</span>);
+</code></pre>
+<p>A column can be started at any point on a row using the
+<code>mu_layout_begin_column()</code> function. Once begun, rows will act inside
+the body of the column — all negative size values will be relative to
+the column’s body as opposed to the body of the container. All new rows
+will be contained within this column until the <code>mu_layout_end_column()</code>
+function is called.</p>
+<p>Internally controls use the <code>mu_layout_next()</code> function to retrieve the
+next screen-positioned-Rect and advance the layout system, you should use
+this function when making custom controls or if you want to advance the
+layout system without placing a control.</p>
+<p>The <code>mu_layout_set_next()</code> function is provided to set the next layout
+Rect explicitly. This will be returned by <code>mu_layout_next()</code> when it is
+next called. By using the <code>relative</code> boolean you can choose to provide
+a screen-space Rect or a Rect which will have the container’s position
+and scroll offset applied to it. You can peek the next Rect from the
+layout system by using the <code>mu_layout_next()</code> function to retrieve it,
+followed by <code>mu_layout_set_next()</code> to return it:</p>
+<pre><code class="language-c">mu_Rect rect = mu_layout_next(ctx);
+mu_layout_set_next(ctx, rect, <span class="hljs-number">0</span>);
+</code></pre>
+<p>If you want to position controls arbitrarily inside a container the
+<code>relative</code> argument of <code>mu_layout_set_next()</code> should be true:</p>
+<pre><code class="language-c"><span class="hljs-comment">/* place a (40, 40) sized button at (300, 300) inside the container: */</span>
+mu_layout_set_next(ctx, mu_rect(<span class="hljs-number">300</span>, <span class="hljs-number">300</span>, <span class="hljs-number">40</span>, <span class="hljs-number">40</span>), <span class="hljs-number">1</span>);
+mu_button(ctx, <span class="hljs-string">&quot;X&quot;</span>);
+</code></pre>
+<p>A Rect set with <code>relative</code> true will also effect the <code>content_size</code>
+of the container, causing it to effect the scrollbars if it exceeds the
+width or height of the container’s body.</p>
+<h2 id="style-customisation">Style Customisation</h2>
+<p>The library provides styling support via the <code>mu_Style</code> struct and, if you
+want greater control over the look, the <code>draw_frame()</code> callback function.</p>
+<p>The <code>mu_Style</code> struct contains spacing and sizing information, as well
+as a <code>colors</code> array which maps <code>colorid</code> to <code>mu_Color</code>. The library uses
+the <code>style</code> pointer field of the context to resolve colors and spacing,
+it is safe to change this pointer or modify any fields of the resultant
+struct at any point. See <a href="../src/microui.h"><code>microui.h</code></a> for the struct’s
+implementation.</p>
+<p>In addition to the style struct the context stores a <code>draw_frame()</code>
+callback function which is used whenever the <em>frame</em> of a control needs
+to be drawn, by default this function draws a rectangle using the color
+of the <code>colorid</code> argument, with a one-pixel border around it using the
+<code>MU_COLOR_BORDER</code> color.</p>
+<h2 id="custom-controls">Custom Controls</h2>
+<p>The library exposes the functions used by built-in controls to allow the
+user to make custom controls. A control should take a <code>mu_Context*</code> value
+as its first argument and return a <code>MU_RES_...</code> value. Your control’s
+implementation should use <code>mu_layout_next()</code> to get its destination
+Rect and advance the layout system. <code>mu_get_id()</code> should be used with
+some data unique to the control to generate an ID for that control and
+<code>mu_update_control()</code> should be used to update the context’s <code>hover</code>
+and <code>focus</code> values based on the mouse input state.</p>
+<p>The <code>MU_OPT_HOLDFOCUS</code> opt value can be passed to <code>mu_update_control()</code>
+if we want the control to retain focus when the mouse button is released
+— this behaviour is used by textboxes which we want to stay focused
+to allow for text input.</p>
+<p>A control that acts as a button which displays an integer and, when
+clicked increments that integer, could be implemented as such:</p>
+<pre><code class="language-c"><span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">incrementer</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">int</span> *value)</span> </span>{
+  mu_Id     id = mu_get_id(ctx, &amp;value, <span class="hljs-keyword">sizeof</span>(value));
+  mu_Rect rect = mu_layout_next(ctx);
+  mu_update_control(ctx, id, rect, <span class="hljs-number">0</span>);
+
+  <span class="hljs-comment">/* handle input */</span>
+  <span class="hljs-keyword">int</span> res = <span class="hljs-number">0</span>;
+  <span class="hljs-keyword">if</span> (ctx-&gt;mouse_pressed == MU_MOUSE_LEFT &amp;&amp; ctx-&gt;focus == id) {
+    (*value)++;
+    res |= MU_RES_CHANGE;
+  }
+
+  <span class="hljs-comment">/* draw */</span>
+  <span class="hljs-keyword">char</span> buf[<span class="hljs-number">32</span>];
+  <span class="hljs-built_in">sprintf</span>(buf, <span class="hljs-string">&quot;%d&quot;</span>, *value);
+  mu_draw_control_frame(ctx, id, rect, MU_COLOR_BUTTON, <span class="hljs-number">0</span>);
+  mu_draw_control_text(ctx, buf, rect, MU_COLOR_TEXT, MU_OPT_ALIGNCENTER);
+
+  <span class="hljs-keyword">return</span> res;
+}
+</code></pre>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> unused(x) ((void) (x))</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-11">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-11">&#x00a7;</a>
+              </div>
+              <h1 id="macros-for-pushing-and-popping">Macros for pushing and popping</h1>
+<p>These macros are used to push and pop repeated values.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> push(stk, val) do {                                                 \
+    expect((stk).idx &lt; (int) (sizeof((stk).items) / sizeof(*(stk).items))); \
+    (stk).items[(stk).idx] = (val);                                         \
+    (stk).idx++; <span class="hljs-comment">/* incremented after incase `val` uses this value */</span>       \
+  } while (0)</span>
+
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> pop(stk) do {      \
+    expect((stk).idx &gt; 0); \
+    (stk).idx--;           \
+  } while (0)</span>
+
+
+<span class="hljs-keyword">static</span> mu_Rect unclipped_rect = { <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0x1000000</span>, <span class="hljs-number">0x1000000</span> };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-12">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-12">&#x00a7;</a>
+              </div>
+              <h1 id="vectors">Vectors</h1>
+<p>these are used to define graphics primitives.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+<span class="hljs-function">mu_Vec2 <span class="hljs-title">mu_vec2</span><span class="hljs-params">(<span class="hljs-keyword">int</span> x, <span class="hljs-keyword">int</span> y)</span> </span>{
+  mu_Vec2 res;
+  res.x = x; res.y = y;
+  <span class="hljs-keyword">return</span> res;
+}
+
+
+<span class="hljs-function">mu_Rect <span class="hljs-title">mu_rect</span><span class="hljs-params">(<span class="hljs-keyword">int</span> x, <span class="hljs-keyword">int</span> y, <span class="hljs-keyword">int</span> w, <span class="hljs-keyword">int</span> h)</span> </span>{
+  mu_Rect res;
+  res.x = x; res.y = y; res.w = w; res.h = h;
+  <span class="hljs-keyword">return</span> res;
+}
+
+
+<span class="hljs-function">mu_Color <span class="hljs-title">mu_color</span><span class="hljs-params">(<span class="hljs-keyword">int</span> r, <span class="hljs-keyword">int</span> g, <span class="hljs-keyword">int</span> b, <span class="hljs-keyword">int</span> a)</span> </span>{
+  mu_Color res;
+  res.r = r; res.g = g; res.b = b; res.a = a;
+  <span class="hljs-keyword">return</span> res;
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-13">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-13">&#x00a7;</a>
+              </div>
+              <h1 id="expand">Expand</h1>
+<p>expands a rectangle by <code>n</code> in all directions</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+
+<span class="hljs-function"><span class="hljs-keyword">static</span> mu_Rect <span class="hljs-title">expand_rect</span><span class="hljs-params">(mu_Rect rect, <span class="hljs-keyword">int</span> n)</span> </span>{
+  <span class="hljs-keyword">return</span> mu_rect(rect.x - n, rect.y - n, rect.w + n * <span class="hljs-number">2</span>, rect.h + n * <span class="hljs-number">2</span>);
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-14">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-14">&#x00a7;</a>
+              </div>
+              <h1 id="intersect">Intersect</h1>
+<p>Intersects two rectangles.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+<span class="hljs-function"><span class="hljs-keyword">static</span> mu_Rect <span class="hljs-title">intersect_rects</span><span class="hljs-params">(mu_Rect r1, mu_Rect r2)</span> </span>{
+  <span class="hljs-keyword">int</span> x1 = mu_max(r1.x, r2.x);
+  <span class="hljs-keyword">int</span> y1 = mu_max(r1.y, r2.y);
+  <span class="hljs-keyword">int</span> x2 = mu_min(r1.x + r1.w, r2.x + r2.w);
+  <span class="hljs-keyword">int</span> y2 = mu_min(r1.y + r1.h, r2.y + r2.h);
+  <span class="hljs-keyword">if</span> (x2 &lt; x1) { x2 = x1; }
+  <span class="hljs-keyword">if</span> (y2 &lt; y1) { y2 = y1; }
+  <span class="hljs-keyword">return</span> mu_rect(x1, y1, x2 - x1, y2 - y1);
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-15">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-15">&#x00a7;</a>
+              </div>
+              <p>Overlap</p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-16">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-16">&#x00a7;</a>
+              </div>
+              <p>Check if vector lies in rectangle</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+
+<span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">int</span> <span class="hljs-title">rect_overlaps_vec2</span><span class="hljs-params">(mu_Rect r, mu_Vec2 p)</span> </span>{
+  <span class="hljs-keyword">return</span> p.x &gt;= r.x &amp;&amp; p.x &lt; r.x + r.w &amp;&amp; p.y &gt;= r.y &amp;&amp; p.y &lt; r.y + r.h;
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-17">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-17">&#x00a7;</a>
+              </div>
+              <p>Draw Frame
+Draw a frame with an optional border.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+
+<span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">draw_frame</span><span class="hljs-params">(mu_Context *ctx, mu_Rect rect, <span class="hljs-keyword">int</span> colorid)</span> </span>{
+  mu_draw_rect(ctx, rect, ctx-&gt;style-&gt;colors[colorid]);
+  <span class="hljs-keyword">if</span> (colorid == MU_COLOR_SCROLLBASE  ||
+      colorid == MU_COLOR_SCROLLTHUMB ||
+      colorid == MU_COLOR_TITLEBG) { <span class="hljs-keyword">return</span>; }
+  <span class="hljs-comment">/* draw border */</span>
+  <span class="hljs-keyword">if</span> (ctx-&gt;style-&gt;colors[MU_COLOR_BORDER].a) {
+    mu_draw_box(ctx, expand_rect(rect, <span class="hljs-number">1</span>), ctx-&gt;style-&gt;colors[MU_COLOR_BORDER]);
+  }
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-18">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-18">&#x00a7;</a>
+              </div>
+              <p>Init
+Initialize the library.</p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-19">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-19">&#x00a7;</a>
+              </div>
+              <p>Compare Z index
+Retuurn difference of Z indeces between <code>a</code> and <code>b</code>.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+<span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">int</span> <span class="hljs-title">compare_zindex</span><span class="hljs-params">(<span class="hljs-keyword">const</span> <span class="hljs-keyword">void</span> *a, <span class="hljs-keyword">const</span> <span class="hljs-keyword">void</span> *b)</span> </span>{
+  <span class="hljs-keyword">return</span> (*(mu_Container**) a)-&gt;zindex - (*(mu_Container**) b)-&gt;zindex;
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-20">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-20">&#x00a7;</a>
+              </div>
+              <h1 id="end">End</h1>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-21">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-21">&#x00a7;</a>
+              </div>
+              
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-22">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-22">&#x00a7;</a>
+              </div>
+              <p>Check that all stacks have been flushed, apply scrolling.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_end</span><span class="hljs-params">(mu_Context *ctx)</span> </span>{
+  <span class="hljs-keyword">int</span> i, n;
+  <span class="hljs-comment">/* check stacks */</span>
+  expect(ctx-&gt;container_stack.idx == <span class="hljs-number">0</span>);
+  expect(ctx-&gt;clip_stack.idx      == <span class="hljs-number">0</span>);
+  expect(ctx-&gt;id_stack.idx        == <span class="hljs-number">0</span>);
+  expect(ctx-&gt;layout_stack.idx    == <span class="hljs-number">0</span>);
+
+  <span class="hljs-comment">/* handle scroll input */</span>
+  <span class="hljs-keyword">if</span> (ctx-&gt;scroll_target) {
+    ctx-&gt;scroll_target-&gt;scroll.x += ctx-&gt;scroll_delta.x;
+    ctx-&gt;scroll_target-&gt;scroll.y += ctx-&gt;scroll_delta.y;
+  }
+
+  <span class="hljs-comment">/* unset focus if focus id was not touched this frame */</span>
+  <span class="hljs-keyword">if</span> (!ctx-&gt;updated_focus) { ctx-&gt;focus = <span class="hljs-number">0</span>; }
+  ctx-&gt;updated_focus = <span class="hljs-number">0</span>;
+
+  <span class="hljs-comment">/* bring hover root to front if mouse was pressed */</span>
+  <span class="hljs-keyword">if</span> (ctx-&gt;mouse_pressed &amp;&amp; ctx-&gt;next_hover_root &amp;&amp;
+      ctx-&gt;next_hover_root-&gt;zindex &lt; ctx-&gt;last_zindex &amp;&amp;
+      ctx-&gt;next_hover_root-&gt;zindex &gt;= <span class="hljs-number">0</span>
+  ) {
+    mu_bring_to_front(ctx, ctx-&gt;next_hover_root);
+  }
+
+  <span class="hljs-comment">/* reset input state */</span>
+  ctx-&gt;key_pressed = <span class="hljs-number">0</span>;
+  ctx-&gt;input_text[<span class="hljs-number">0</span>] = <span class="hljs-string">&#x27;\0&#x27;</span>;
+  ctx-&gt;mouse_pressed = <span class="hljs-number">0</span>;
+  ctx-&gt;scroll_delta = mu_vec2(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>);
+  ctx-&gt;last_mouse_pos = ctx-&gt;mouse_pos;
+
+  <span class="hljs-comment">/* sort root containers by zindex */</span>
+  n = ctx-&gt;root_list.idx;
+  qsort(ctx-&gt;root_list.items, n, <span class="hljs-keyword">sizeof</span>(mu_Container*), compare_zindex);
+
+  <span class="hljs-comment">/* set root container jump commands */</span>
+  <span class="hljs-keyword">for</span> (i = <span class="hljs-number">0</span>; i &lt; n; i++) {
+    mu_Container *cnt = ctx-&gt;root_list.items[i];
+    <span class="hljs-comment">/* if this is the first container then make the first command jump to it.
+    ** otherwise set the previous container&#x27;s tail to jump to this one */</span>
+    <span class="hljs-keyword">if</span> (i == <span class="hljs-number">0</span>) {
+      mu_Command *cmd = (mu_Command*) ctx-&gt;command_list.items;
+      cmd-&gt;jump.dst = (<span class="hljs-keyword">char</span>*) cnt-&gt;head + <span class="hljs-keyword">sizeof</span>(mu_JumpCommand);
+    } <span class="hljs-keyword">else</span> {
+      mu_Container *prev = ctx-&gt;root_list.items[i - <span class="hljs-number">1</span>];
+      prev-&gt;tail-&gt;jump.dst = (<span class="hljs-keyword">char</span>*) cnt-&gt;head + <span class="hljs-keyword">sizeof</span>(mu_JumpCommand);
+    }
+    <span class="hljs-comment">/* make the last container&#x27;s tail jump to the end of command list */</span>
+    <span class="hljs-keyword">if</span> (i == n - <span class="hljs-number">1</span>) {
+      cnt-&gt;tail-&gt;jump.dst = ctx-&gt;command_list.items + ctx-&gt;command_list.idx;
+    }
+  }
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_set_focus</span><span class="hljs-params">(mu_Context *ctx, mu_Id id)</span> </span>{
+  ctx-&gt;focus = id;
+  ctx-&gt;updated_focus = <span class="hljs-number">1</span>;
+}
+
+
+<span class="hljs-comment">/* 32bit fnv-1a hash */</span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> HASH_INITIAL 2166136261</span>
+
+<span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">hash</span><span class="hljs-params">(mu_Id *hash, <span class="hljs-keyword">const</span> <span class="hljs-keyword">void</span> *data, <span class="hljs-keyword">int</span> size)</span> </span>{
+  <span class="hljs-keyword">const</span> <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">char</span> *p = data;
+  <span class="hljs-keyword">while</span> (size--) {
+    *hash = (*hash ^ *p++) * <span class="hljs-number">16777619</span>;
+  }
+}
+
+
+<span class="hljs-function">mu_Id <span class="hljs-title">mu_get_id</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">void</span> *data, <span class="hljs-keyword">int</span> size)</span> </span>{
+  <span class="hljs-keyword">int</span> idx = ctx-&gt;id_stack.idx;
+  mu_Id res = (idx &gt; <span class="hljs-number">0</span>) ? ctx-&gt;id_stack.items[idx - <span class="hljs-number">1</span>] : HASH_INITIAL;
+  hash(&amp;res, data, size);
+  ctx-&gt;last_id = res;
+  <span class="hljs-keyword">return</span> res;
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_push_id</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">void</span> *data, <span class="hljs-keyword">int</span> size)</span> </span>{
+  push(ctx-&gt;id_stack, mu_get_id(ctx, data, size));
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_pop_id</span><span class="hljs-params">(mu_Context *ctx)</span> </span>{
+  pop(ctx-&gt;id_stack);
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_push_clip_rect</span><span class="hljs-params">(mu_Context *ctx, mu_Rect rect)</span> </span>{
+  mu_Rect last = mu_get_clip_rect(ctx);
+  push(ctx-&gt;clip_stack, intersect_rects(rect, last));
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_pop_clip_rect</span><span class="hljs-params">(mu_Context *ctx)</span> </span>{
+  pop(ctx-&gt;clip_stack);
+}
+
+
+<span class="hljs-function">mu_Rect <span class="hljs-title">mu_get_clip_rect</span><span class="hljs-params">(mu_Context *ctx)</span> </span>{
+  expect(ctx-&gt;clip_stack.idx &gt; <span class="hljs-number">0</span>);
+  <span class="hljs-keyword">return</span> ctx-&gt;clip_stack.items[ctx-&gt;clip_stack.idx - <span class="hljs-number">1</span>];
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">mu_check_clip</span><span class="hljs-params">(mu_Context *ctx, mu_Rect r)</span> </span>{
+  mu_Rect cr = mu_get_clip_rect(ctx);
+  <span class="hljs-keyword">if</span> (r.x &gt; cr.x + cr.w || r.x + r.w &lt; cr.x ||
+      r.y &gt; cr.y + cr.h || r.y + r.h &lt; cr.y   ) { <span class="hljs-keyword">return</span> MU_CLIP_ALL; }
+  <span class="hljs-keyword">if</span> (r.x &gt;= cr.x &amp;&amp; r.x + r.w &lt;= cr.x + cr.w &amp;&amp;
+      r.y &gt;= cr.y &amp;&amp; r.y + r.h &lt;= cr.y + cr.h ) { <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>; }
+  <span class="hljs-keyword">return</span> MU_CLIP_PART;
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">push_layout</span><span class="hljs-params">(mu_Context *ctx, mu_Rect body, mu_Vec2 scroll)</span> </span>{
+  mu_Layout layout;
+  <span class="hljs-keyword">int</span> width = <span class="hljs-number">0</span>;
+  <span class="hljs-built_in">memset</span>(&amp;layout, <span class="hljs-number">0</span>, <span class="hljs-keyword">sizeof</span>(layout));
+  layout.body = mu_rect(body.x - scroll.x, body.y - scroll.y, body.w, body.h);
+  layout.max = mu_vec2(<span class="hljs-number">-0x1000000</span>, <span class="hljs-number">-0x1000000</span>);
+  push(ctx-&gt;layout_stack, layout);
+  mu_layout_row(ctx, <span class="hljs-number">1</span>, &amp;width, <span class="hljs-number">0</span>);
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">static</span> mu_Layout* <span class="hljs-title">get_layout</span><span class="hljs-params">(mu_Context *ctx)</span> </span>{
+  <span class="hljs-keyword">return</span> &amp;ctx-&gt;layout_stack.items[ctx-&gt;layout_stack.idx - <span class="hljs-number">1</span>];
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">pop_container</span><span class="hljs-params">(mu_Context *ctx)</span> </span>{
+  mu_Container *cnt = mu_get_current_container(ctx);
+  mu_Layout *layout = get_layout(ctx);
+  cnt-&gt;content_size.x = layout-&gt;max.x - layout-&gt;body.x;
+  cnt-&gt;content_size.y = layout-&gt;max.y - layout-&gt;body.y;
+  <span class="hljs-comment">/* pop container, layout and id */</span>
+  pop(ctx-&gt;container_stack);
+  pop(ctx-&gt;layout_stack);
+  mu_pop_id(ctx);
+}
+
+
+<span class="hljs-function">mu_Container* <span class="hljs-title">mu_get_current_container</span><span class="hljs-params">(mu_Context *ctx)</span> </span>{
+  expect(ctx-&gt;container_stack.idx &gt; <span class="hljs-number">0</span>);
+  <span class="hljs-keyword">return</span> ctx-&gt;container_stack.items[ ctx-&gt;container_stack.idx - <span class="hljs-number">1</span> ];
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">static</span> mu_Container* <span class="hljs-title">get_container</span><span class="hljs-params">(mu_Context *ctx, mu_Id id, <span class="hljs-keyword">int</span> opt)</span> </span>{
+  mu_Container *cnt;
+  <span class="hljs-comment">/* try to get existing container from pool */</span>
+  <span class="hljs-keyword">int</span> idx = mu_pool_get(ctx, ctx-&gt;container_pool, MU_CONTAINERPOOL_SIZE, id);
+  <span class="hljs-keyword">if</span> (idx &gt;= <span class="hljs-number">0</span>) {
+    <span class="hljs-keyword">if</span> (ctx-&gt;containers[idx].open || ~opt &amp; MU_OPT_CLOSED) {
+      mu_pool_update(ctx, ctx-&gt;container_pool, idx);
+    }
+    <span class="hljs-keyword">return</span> &amp;ctx-&gt;containers[idx];
+  }
+  <span class="hljs-keyword">if</span> (opt &amp; MU_OPT_CLOSED) { <span class="hljs-keyword">return</span> <span class="hljs-literal">NULL</span>; }
+  <span class="hljs-comment">/* container not found in pool: init new container */</span>
+  idx = mu_pool_init(ctx, ctx-&gt;container_pool, MU_CONTAINERPOOL_SIZE, id);
+  cnt = &amp;ctx-&gt;containers[idx];
+  <span class="hljs-built_in">memset</span>(cnt, <span class="hljs-number">0</span>, <span class="hljs-keyword">sizeof</span>(*cnt));
+  cnt-&gt;open = <span class="hljs-number">1</span>;
+  mu_bring_to_front(ctx, cnt);
+  <span class="hljs-keyword">return</span> cnt;
+}
+
+
+<span class="hljs-function">mu_Container* <span class="hljs-title">mu_get_container</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *name)</span> </span>{
+  mu_Id id = mu_get_id(ctx, name, <span class="hljs-built_in">strlen</span>(name));
+  <span class="hljs-keyword">return</span> get_container(ctx, id, <span class="hljs-number">0</span>);
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_bring_to_front</span><span class="hljs-params">(mu_Context *ctx, mu_Container *cnt)</span> </span>{
+  cnt-&gt;zindex = ++ctx-&gt;last_zindex;
+}
+
+
+<span class="hljs-comment">/*============================================================================
+** pool
+**============================================================================*/</span>
+
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">mu_pool_init</span><span class="hljs-params">(mu_Context *ctx, mu_PoolItem *items, <span class="hljs-keyword">int</span> len, mu_Id id)</span> </span>{
+  <span class="hljs-keyword">int</span> i, n = <span class="hljs-number">-1</span>, f = ctx-&gt;frame;
+  <span class="hljs-keyword">for</span> (i = <span class="hljs-number">0</span>; i &lt; len; i++) {
+    <span class="hljs-keyword">if</span> (items[i].last_update &lt; f) {
+      f = items[i].last_update;
+      n = i;
+    }
+  }
+  expect(n &gt; <span class="hljs-number">-1</span>);
+  items[n].id = id;
+  mu_pool_update(ctx, items, n);
+  <span class="hljs-keyword">return</span> n;
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">mu_pool_get</span><span class="hljs-params">(mu_Context *ctx, mu_PoolItem *items, <span class="hljs-keyword">int</span> len, mu_Id id)</span> </span>{
+  <span class="hljs-keyword">int</span> i;
+  unused(ctx);
+  <span class="hljs-keyword">for</span> (i = <span class="hljs-number">0</span>; i &lt; len; i++) {
+    <span class="hljs-keyword">if</span> (items[i].id == id) { <span class="hljs-keyword">return</span> i; }
+  }
+  <span class="hljs-keyword">return</span> <span class="hljs-number">-1</span>;
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_pool_update</span><span class="hljs-params">(mu_Context *ctx, mu_PoolItem *items, <span class="hljs-keyword">int</span> idx)</span> </span>{
+  items[idx].last_update = ctx-&gt;frame;
+}
+
+
+
+
+<span class="hljs-comment">/*============================================================================
+** commandlist
+**============================================================================*/</span>
+
+<span class="hljs-function">mu_Command* <span class="hljs-title">mu_push_command</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">int</span> type, <span class="hljs-keyword">int</span> size)</span> </span>{
+  mu_Command *cmd = (mu_Command*) (ctx-&gt;command_list.items + ctx-&gt;command_list.idx);
+  expect(ctx-&gt;command_list.idx + size &lt; MU_COMMANDLIST_SIZE);
+  cmd-&gt;base.type = type;
+  cmd-&gt;base.size = size;
+  ctx-&gt;command_list.idx += size;
+  <span class="hljs-keyword">return</span> cmd;
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">mu_next_command</span><span class="hljs-params">(mu_Context *ctx, mu_Command **cmd)</span> </span>{
+  <span class="hljs-keyword">if</span> (*cmd) {
+    *cmd = (mu_Command*) (((<span class="hljs-keyword">char</span>*) *cmd) + (*cmd)-&gt;base.size);
+  } <span class="hljs-keyword">else</span> {
+    *cmd = (mu_Command*) ctx-&gt;command_list.items;
+  }
+  <span class="hljs-keyword">while</span> ((<span class="hljs-keyword">char</span>*) *cmd != ctx-&gt;command_list.items + ctx-&gt;command_list.idx) {
+    <span class="hljs-keyword">if</span> ((*cmd)-&gt;type != MU_COMMAND_JUMP) { <span class="hljs-keyword">return</span> <span class="hljs-number">1</span>; }
+    *cmd = (*cmd)-&gt;jump.dst;
+  }
+  <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">static</span> mu_Command* <span class="hljs-title">push_jump</span><span class="hljs-params">(mu_Context *ctx, mu_Command *dst)</span> </span>{
+  mu_Command *cmd;
+  cmd = mu_push_command(ctx, MU_COMMAND_JUMP, <span class="hljs-keyword">sizeof</span>(mu_JumpCommand));
+  cmd-&gt;jump.dst = dst;
+  <span class="hljs-keyword">return</span> cmd;
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_set_clip</span><span class="hljs-params">(mu_Context *ctx, mu_Rect rect)</span> </span>{
+  mu_Command *cmd;
+  cmd = mu_push_command(ctx, MU_COMMAND_CLIP, <span class="hljs-keyword">sizeof</span>(mu_ClipCommand));
+  cmd-&gt;clip.rect = rect;
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_draw_rect</span><span class="hljs-params">(mu_Context *ctx, mu_Rect rect, mu_Color color)</span> </span>{
+  mu_Command *cmd;
+  rect = intersect_rects(rect, mu_get_clip_rect(ctx));
+  <span class="hljs-keyword">if</span> (rect.w &gt; <span class="hljs-number">0</span> &amp;&amp; rect.h &gt; <span class="hljs-number">0</span>) {
+    cmd = mu_push_command(ctx, MU_COMMAND_RECT, <span class="hljs-keyword">sizeof</span>(mu_RectCommand));
+    cmd-&gt;rect.rect = rect;
+    cmd-&gt;rect.color = color;
+  }
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-23">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-23">&#x00a7;</a>
+              </div>
+              <h1 id="box">Box</h1>
+<p>Draw a box around the rectangle.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_draw_box</span><span class="hljs-params">(mu_Context *ctx, mu_Rect rect, mu_Color color)</span> </span>{
+  mu_draw_rect(ctx, mu_rect(rect.x + <span class="hljs-number">1</span>, rect.y, rect.w - <span class="hljs-number">2</span>, <span class="hljs-number">1</span>), color);
+  mu_draw_rect(ctx, mu_rect(rect.x + <span class="hljs-number">1</span>, rect.y + rect.h - <span class="hljs-number">1</span>, rect.w - <span class="hljs-number">2</span>, <span class="hljs-number">1</span>), color);
+  mu_draw_rect(ctx, mu_rect(rect.x, rect.y, <span class="hljs-number">1</span>, rect.h), color);
+  mu_draw_rect(ctx, mu_rect(rect.x + rect.w - <span class="hljs-number">1</span>, rect.y, <span class="hljs-number">1</span>, rect.h), color);
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_draw_text</span><span class="hljs-params">(mu_Context *ctx, mu_Font font, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *str, <span class="hljs-keyword">int</span> len,
+  mu_Vec2 pos, mu_Color color)</span>
+</span>{
+  mu_Command *cmd;
+  mu_Rect rect = mu_rect(
+    pos.x, pos.y, ctx-&gt;text_width(font, str, len), ctx-&gt;text_height(font));
+  <span class="hljs-keyword">int</span> clipped = mu_check_clip(ctx, rect);
+  <span class="hljs-keyword">if</span> (clipped == MU_CLIP_ALL ) { <span class="hljs-keyword">return</span>; }
+  <span class="hljs-keyword">if</span> (clipped == MU_CLIP_PART) { mu_set_clip(ctx, mu_get_clip_rect(ctx)); }
+  <span class="hljs-comment">/* add command */</span>
+  <span class="hljs-keyword">if</span> (len &lt; <span class="hljs-number">0</span>) { len = <span class="hljs-built_in">strlen</span>(str); }
+  cmd = mu_push_command(ctx, MU_COMMAND_TEXT, <span class="hljs-keyword">sizeof</span>(mu_TextCommand) + len);
+  <span class="hljs-built_in">memcpy</span>(cmd-&gt;text.str, str, len);
+  cmd-&gt;text.str[len] = <span class="hljs-string">&#x27;\0&#x27;</span>;
+  cmd-&gt;text.pos = pos;
+  cmd-&gt;text.color = color;
+  cmd-&gt;text.font = font;
+  <span class="hljs-comment">/* reset clipping if it was set */</span>
+  <span class="hljs-keyword">if</span> (clipped) { mu_set_clip(ctx, unclipped_rect); }
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_draw_icon</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">int</span> id, mu_Rect rect, mu_Color color)</span> </span>{
+  mu_Command *cmd;
+  <span class="hljs-comment">/* do clip command if the rect isn&#x27;t fully contained within the cliprect */</span>
+  <span class="hljs-keyword">int</span> clipped = mu_check_clip(ctx, rect);
+  <span class="hljs-keyword">if</span> (clipped == MU_CLIP_ALL ) { <span class="hljs-keyword">return</span>; }
+  <span class="hljs-keyword">if</span> (clipped == MU_CLIP_PART) { mu_set_clip(ctx, mu_get_clip_rect(ctx)); }
+  <span class="hljs-comment">/* do icon command */</span>
+  cmd = mu_push_command(ctx, MU_COMMAND_ICON, <span class="hljs-keyword">sizeof</span>(mu_IconCommand));
+  cmd-&gt;icon.id = id;
+  cmd-&gt;icon.rect = rect;
+  cmd-&gt;icon.color = color;
+  <span class="hljs-comment">/* reset clipping if it was set */</span>
+  <span class="hljs-keyword">if</span> (clipped) { mu_set_clip(ctx, unclipped_rect); }
+}
+
+
+<span class="hljs-comment">/*============================================================================
+** layout
+**============================================================================*/</span>
+
+<span class="hljs-class"><span class="hljs-keyword">enum</span> {</span> RELATIVE = <span class="hljs-number">1</span>, ABSOLUTE = <span class="hljs-number">2</span> };
+
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_layout_begin_column</span><span class="hljs-params">(mu_Context *ctx)</span> </span>{
+  push_layout(ctx, mu_layout_next(ctx), mu_vec2(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>));
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_layout_end_column</span><span class="hljs-params">(mu_Context *ctx)</span> </span>{
+  mu_Layout *a, *b;
+  b = get_layout(ctx);
+  pop(ctx-&gt;layout_stack);
+  <span class="hljs-comment">/* inherit position/next_row/max from child layout if they are greater */</span>
+  a = get_layout(ctx);
+  a-&gt;position.x = mu_max(a-&gt;position.x, b-&gt;position.x + b-&gt;body.x - a-&gt;body.x);
+  a-&gt;next_row = mu_max(a-&gt;next_row, b-&gt;next_row + b-&gt;body.y - a-&gt;body.y);
+  a-&gt;max.x = mu_max(a-&gt;max.x, b-&gt;max.x);
+  a-&gt;max.y = mu_max(a-&gt;max.y, b-&gt;max.y);
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_layout_row</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">int</span> items, <span class="hljs-keyword">const</span> <span class="hljs-keyword">int</span> *widths, <span class="hljs-keyword">int</span> height)</span> </span>{
+  mu_Layout *layout = get_layout(ctx);
+  <span class="hljs-keyword">if</span> (widths) {
+    expect(items &lt;= MU_MAX_WIDTHS);
+    <span class="hljs-built_in">memcpy</span>(layout-&gt;widths, widths, items * <span class="hljs-keyword">sizeof</span>(widths[<span class="hljs-number">0</span>]));
+  }
+  layout-&gt;items = items;
+  layout-&gt;position = mu_vec2(layout-&gt;indent, layout-&gt;next_row);
+  layout-&gt;size.y = height;
+  layout-&gt;item_index = <span class="hljs-number">0</span>;
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_layout_width</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">int</span> width)</span> </span>{
+  get_layout(ctx)-&gt;size.x = width;
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_layout_height</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">int</span> height)</span> </span>{
+  get_layout(ctx)-&gt;size.y = height;
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_layout_set_next</span><span class="hljs-params">(mu_Context *ctx, mu_Rect r, <span class="hljs-keyword">int</span> relative)</span> </span>{
+  mu_Layout *layout = get_layout(ctx);
+  layout-&gt;next = r;
+  layout-&gt;next_type = relative ? RELATIVE : ABSOLUTE;
+}
+
+
+<span class="hljs-function">mu_Rect <span class="hljs-title">mu_layout_next</span><span class="hljs-params">(mu_Context *ctx)</span> </span>{
+  mu_Layout *layout = get_layout(ctx);
+  mu_Style *style = ctx-&gt;style;
+  mu_Rect res;
+
+  <span class="hljs-keyword">if</span> (layout-&gt;next_type) {
+    <span class="hljs-comment">/* handle rect set by `mu_layout_set_next` */</span>
+    <span class="hljs-keyword">int</span> type = layout-&gt;next_type;
+    layout-&gt;next_type = <span class="hljs-number">0</span>;
+    res = layout-&gt;next;
+    <span class="hljs-keyword">if</span> (type == ABSOLUTE) { <span class="hljs-keyword">return</span> (ctx-&gt;last_rect = res); }
+
+  } <span class="hljs-keyword">else</span> {
+    <span class="hljs-comment">/* handle next row */</span>
+    <span class="hljs-keyword">if</span> (layout-&gt;item_index == layout-&gt;items) {
+      mu_layout_row(ctx, layout-&gt;items, <span class="hljs-literal">NULL</span>, layout-&gt;size.y);
+    }
+
+    <span class="hljs-comment">/* position */</span>
+    res.x = layout-&gt;position.x;
+    res.y = layout-&gt;position.y;
+
+    <span class="hljs-comment">/* size */</span>
+    res.w = layout-&gt;items &gt; <span class="hljs-number">0</span> ? layout-&gt;widths[layout-&gt;item_index] : layout-&gt;size.x;
+    res.h = layout-&gt;size.y;
+    <span class="hljs-keyword">if</span> (res.w == <span class="hljs-number">0</span>) { res.w = style-&gt;size.x + style-&gt;padding * <span class="hljs-number">2</span>; }
+    <span class="hljs-keyword">if</span> (res.h == <span class="hljs-number">0</span>) { res.h = style-&gt;size.y + style-&gt;padding * <span class="hljs-number">2</span>; }
+    <span class="hljs-keyword">if</span> (res.w &lt;  <span class="hljs-number">0</span>) { res.w += layout-&gt;body.w - res.x + <span class="hljs-number">1</span>; }
+    <span class="hljs-keyword">if</span> (res.h &lt;  <span class="hljs-number">0</span>) { res.h += layout-&gt;body.h - res.y + <span class="hljs-number">1</span>; }
+
+    layout-&gt;item_index++;
+  }
+
+  <span class="hljs-comment">/* update position */</span>
+  layout-&gt;position.x += res.w + style-&gt;spacing;
+  layout-&gt;next_row = mu_max(layout-&gt;next_row, res.y + res.h + style-&gt;spacing);
+
+  <span class="hljs-comment">/* apply body offset */</span>
+  res.x += layout-&gt;body.x;
+  res.y += layout-&gt;body.y;
+
+  <span class="hljs-comment">/* update max position */</span>
+  layout-&gt;max.x = mu_max(layout-&gt;max.x, res.x + res.w);
+  layout-&gt;max.y = mu_max(layout-&gt;max.y, res.y + res.h);
+
+  <span class="hljs-keyword">return</span> (ctx-&gt;last_rect = res);
+}
+
+
+<span class="hljs-comment">/*============================================================================
+** controls
+**============================================================================*/</span>
+
+<span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">int</span> <span class="hljs-title">in_hover_root</span><span class="hljs-params">(mu_Context *ctx)</span> </span>{
+  <span class="hljs-keyword">int</span> i = ctx-&gt;container_stack.idx;
+  <span class="hljs-keyword">while</span> (i--) {
+    <span class="hljs-keyword">if</span> (ctx-&gt;container_stack.items[i] == ctx-&gt;hover_root) { <span class="hljs-keyword">return</span> <span class="hljs-number">1</span>; }
+    <span class="hljs-comment">/* only root containers have their `head` field set; stop searching if we&#x27;ve
+    ** reached the current root container */</span>
+    <span class="hljs-keyword">if</span> (ctx-&gt;container_stack.items[i]-&gt;head) { <span class="hljs-keyword">break</span>; }
+  }
+  <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_draw_control_frame</span><span class="hljs-params">(mu_Context *ctx, mu_Id id, mu_Rect rect,
+  <span class="hljs-keyword">int</span> colorid, <span class="hljs-keyword">int</span> opt)</span>
+</span>{
+  <span class="hljs-keyword">if</span> (opt &amp; MU_OPT_NOFRAME) { <span class="hljs-keyword">return</span>; }
+  colorid += (ctx-&gt;focus == id) ? <span class="hljs-number">2</span> : (ctx-&gt;hover == id) ? <span class="hljs-number">1</span> : <span class="hljs-number">0</span>;
+  ctx-&gt;draw_frame(ctx, rect, colorid);
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_draw_control_text</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *str, mu_Rect rect,
+  <span class="hljs-keyword">int</span> colorid, <span class="hljs-keyword">int</span> opt)</span>
+</span>{
+  mu_Vec2 pos;
+  mu_Font font = ctx-&gt;style-&gt;font;
+  <span class="hljs-keyword">int</span> tw = ctx-&gt;text_width(font, str, <span class="hljs-number">-1</span>);
+  mu_push_clip_rect(ctx, rect);
+  pos.y = rect.y + (rect.h - ctx-&gt;text_height(font)) / <span class="hljs-number">2</span>;
+  <span class="hljs-keyword">if</span> (opt &amp; MU_OPT_ALIGNCENTER) {
+    pos.x = rect.x + (rect.w - tw) / <span class="hljs-number">2</span>;
+  } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (opt &amp; MU_OPT_ALIGNRIGHT) {
+    pos.x = rect.x + rect.w - tw - ctx-&gt;style-&gt;padding;
+  } <span class="hljs-keyword">else</span> {
+    pos.x = rect.x + ctx-&gt;style-&gt;padding;
+  }
+  mu_draw_text(ctx, font, str, <span class="hljs-number">-1</span>, pos, ctx-&gt;style-&gt;colors[colorid]);
+  mu_pop_clip_rect(ctx);
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">mu_mouse_over</span><span class="hljs-params">(mu_Context *ctx, mu_Rect rect)</span> </span>{
+  <span class="hljs-keyword">return</span> rect_overlaps_vec2(rect, ctx-&gt;mouse_pos) &amp;&amp;
+    rect_overlaps_vec2(mu_get_clip_rect(ctx), ctx-&gt;mouse_pos) &amp;&amp;
+    in_hover_root(ctx);
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_update_control</span><span class="hljs-params">(mu_Context *ctx, mu_Id id, mu_Rect rect, <span class="hljs-keyword">int</span> opt)</span> </span>{
+  <span class="hljs-keyword">int</span> mouseover = mu_mouse_over(ctx, rect);
+
+  <span class="hljs-keyword">if</span> (ctx-&gt;focus == id) { ctx-&gt;updated_focus = <span class="hljs-number">1</span>; }
+  <span class="hljs-keyword">if</span> (opt &amp; MU_OPT_NOINTERACT) { <span class="hljs-keyword">return</span>; }
+  <span class="hljs-keyword">if</span> (mouseover &amp;&amp; !ctx-&gt;mouse_down) { ctx-&gt;hover = id; }
+
+  <span class="hljs-keyword">if</span> (ctx-&gt;focus == id) {
+    <span class="hljs-keyword">if</span> (ctx-&gt;mouse_pressed &amp;&amp; !mouseover) { mu_set_focus(ctx, <span class="hljs-number">0</span>); }
+    <span class="hljs-keyword">if</span> (!ctx-&gt;mouse_down &amp;&amp; ~opt &amp; MU_OPT_HOLDFOCUS) { mu_set_focus(ctx, <span class="hljs-number">0</span>); }
+  }
+
+  <span class="hljs-keyword">if</span> (ctx-&gt;hover == id) {
+    <span class="hljs-keyword">if</span> (ctx-&gt;mouse_pressed) {
+      mu_set_focus(ctx, id);
+    } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (!mouseover) {
+      ctx-&gt;hover = <span class="hljs-number">0</span>;
+    }
+  }
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_text</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *text)</span> </span>{
+  <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *start, *end, *p = text;
+  <span class="hljs-keyword">int</span> width = <span class="hljs-number">-1</span>;
+  mu_Font font = ctx-&gt;style-&gt;font;
+  mu_Color color = ctx-&gt;style-&gt;colors[MU_COLOR_TEXT];
+  mu_layout_begin_column(ctx);
+  mu_layout_row(ctx, <span class="hljs-number">1</span>, &amp;width, ctx-&gt;text_height(font));
+  <span class="hljs-keyword">do</span> {
+    mu_Rect r = mu_layout_next(ctx);
+    <span class="hljs-keyword">int</span> w = <span class="hljs-number">0</span>;
+    start = end = p;
+    <span class="hljs-keyword">do</span> {
+      <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span>* word = p;
+      <span class="hljs-keyword">while</span> (*p &amp;&amp; *p != <span class="hljs-string">&#x27; &#x27;</span> &amp;&amp; *p != <span class="hljs-string">&#x27;\n&#x27;</span>) { p++; }
+      w += ctx-&gt;text_width(font, word, p - word);
+      <span class="hljs-keyword">if</span> (w &gt; r.w &amp;&amp; end != start) { <span class="hljs-keyword">break</span>; }
+      w += ctx-&gt;text_width(font, p, <span class="hljs-number">1</span>);
+      end = p++;
+    } <span class="hljs-keyword">while</span> (*end &amp;&amp; *end != <span class="hljs-string">&#x27;\n&#x27;</span>);
+    mu_draw_text(ctx, font, start, end - start, mu_vec2(r.x, r.y), color);
+    p = end + <span class="hljs-number">1</span>;
+  } <span class="hljs-keyword">while</span> (*end);
+  mu_layout_end_column(ctx);
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_label</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *text)</span> </span>{
+  mu_draw_control_text(ctx, text, mu_layout_next(ctx), MU_COLOR_TEXT, <span class="hljs-number">0</span>);
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">mu_button_ex</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *label, <span class="hljs-keyword">int</span> icon, <span class="hljs-keyword">int</span> opt)</span> </span>{
+  <span class="hljs-keyword">int</span> res = <span class="hljs-number">0</span>;
+  mu_Id id = label ? mu_get_id(ctx, label, <span class="hljs-built_in">strlen</span>(label))
+                   : mu_get_id(ctx, &amp;icon, <span class="hljs-keyword">sizeof</span>(icon));
+  mu_Rect r = mu_layout_next(ctx);
+  mu_update_control(ctx, id, r, opt);
+  <span class="hljs-comment">/* handle click */</span>
+  <span class="hljs-keyword">if</span> (ctx-&gt;mouse_pressed == MU_MOUSE_LEFT &amp;&amp; ctx-&gt;focus == id) {
+    res |= MU_RES_SUBMIT;
+  }
+  <span class="hljs-comment">/* draw */</span>
+  mu_draw_control_frame(ctx, id, r, MU_COLOR_BUTTON, opt);
+  <span class="hljs-keyword">if</span> (label) { mu_draw_control_text(ctx, label, r, MU_COLOR_TEXT, opt); }
+  <span class="hljs-keyword">if</span> (icon) { mu_draw_icon(ctx, icon, r, ctx-&gt;style-&gt;colors[MU_COLOR_TEXT]); }
+  <span class="hljs-keyword">return</span> res;
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">mu_checkbox</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *label, <span class="hljs-keyword">int</span> *state)</span> </span>{
+  <span class="hljs-keyword">int</span> res = <span class="hljs-number">0</span>;
+  mu_Id id = mu_get_id(ctx, &amp;state, <span class="hljs-keyword">sizeof</span>(state));
+  mu_Rect r = mu_layout_next(ctx);
+  mu_Rect box = mu_rect(r.x, r.y, r.h, r.h);
+  mu_update_control(ctx, id, r, <span class="hljs-number">0</span>);
+  <span class="hljs-comment">/* handle click */</span>
+  <span class="hljs-keyword">if</span> (ctx-&gt;mouse_pressed == MU_MOUSE_LEFT &amp;&amp; ctx-&gt;focus == id) {
+    res |= MU_RES_CHANGE;
+    *state = !*state;
+  }
+  <span class="hljs-comment">/* draw */</span>
+  mu_draw_control_frame(ctx, id, box, MU_COLOR_BASE, <span class="hljs-number">0</span>);
+  <span class="hljs-keyword">if</span> (*state) {
+    mu_draw_icon(ctx, MU_ICON_CHECK, box, ctx-&gt;style-&gt;colors[MU_COLOR_TEXT]);
+  }
+  r = mu_rect(r.x + box.w, r.y, r.w - box.w, r.h);
+  mu_draw_control_text(ctx, label, r, MU_COLOR_TEXT, <span class="hljs-number">0</span>);
+  <span class="hljs-keyword">return</span> res;
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">mu_textbox_raw</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">char</span> *buf, <span class="hljs-keyword">int</span> bufsz, mu_Id id, mu_Rect r,
+  <span class="hljs-keyword">int</span> opt)</span>
+</span>{
+  <span class="hljs-keyword">int</span> res = <span class="hljs-number">0</span>;
+  mu_update_control(ctx, id, r, opt | MU_OPT_HOLDFOCUS);
+
+  <span class="hljs-keyword">if</span> (ctx-&gt;focus == id) {
+    <span class="hljs-comment">/* handle text input */</span>
+    <span class="hljs-keyword">int</span> len = <span class="hljs-built_in">strlen</span>(buf);
+    <span class="hljs-keyword">int</span> n = mu_min(bufsz - len - <span class="hljs-number">1</span>, (<span class="hljs-keyword">int</span>) <span class="hljs-built_in">strlen</span>(ctx-&gt;input_text));
+    <span class="hljs-keyword">if</span> (n &gt; <span class="hljs-number">0</span>) {
+      <span class="hljs-built_in">memcpy</span>(buf + len, ctx-&gt;input_text, n);
+      len += n;
+      buf[len] = <span class="hljs-string">&#x27;\0&#x27;</span>;
+      res |= MU_RES_CHANGE;
+    }
+    <span class="hljs-comment">/* handle backspace */</span>
+    <span class="hljs-keyword">if</span> (ctx-&gt;key_pressed &amp; MU_KEY_BACKSPACE &amp;&amp; len &gt; <span class="hljs-number">0</span>) {
+      <span class="hljs-comment">/* skip utf-8 continuation bytes */</span>
+      <span class="hljs-keyword">while</span> ((buf[--len] &amp; <span class="hljs-number">0xc0</span>) == <span class="hljs-number">0x80</span> &amp;&amp; len &gt; <span class="hljs-number">0</span>);
+      buf[len] = <span class="hljs-string">&#x27;\0&#x27;</span>;
+      res |= MU_RES_CHANGE;
+    }
+    <span class="hljs-comment">/* handle return */</span>
+    <span class="hljs-keyword">if</span> (ctx-&gt;key_pressed &amp; MU_KEY_RETURN) {
+      mu_set_focus(ctx, <span class="hljs-number">0</span>);
+      res |= MU_RES_SUBMIT;
+    }
+  }
+
+  <span class="hljs-comment">/* draw */</span>
+  mu_draw_control_frame(ctx, id, r, MU_COLOR_BASE, opt);
+  <span class="hljs-keyword">if</span> (ctx-&gt;focus == id) {
+    mu_Color color = ctx-&gt;style-&gt;colors[MU_COLOR_TEXT];
+    mu_Font font = ctx-&gt;style-&gt;font;
+    <span class="hljs-keyword">int</span> textw = ctx-&gt;text_width(font, buf, <span class="hljs-number">-1</span>);
+    <span class="hljs-keyword">int</span> texth = ctx-&gt;text_height(font);
+    <span class="hljs-keyword">int</span> ofx = r.w - ctx-&gt;style-&gt;padding - textw - <span class="hljs-number">1</span>;
+    <span class="hljs-keyword">int</span> textx = r.x + mu_min(ofx, ctx-&gt;style-&gt;padding);
+    <span class="hljs-keyword">int</span> texty = r.y + (r.h - texth) / <span class="hljs-number">2</span>;
+    mu_push_clip_rect(ctx, r);
+    mu_draw_text(ctx, font, buf, <span class="hljs-number">-1</span>, mu_vec2(textx, texty), color);
+    mu_draw_rect(ctx, mu_rect(textx + textw, texty, <span class="hljs-number">1</span>, texth), color);
+    mu_pop_clip_rect(ctx);
+  } <span class="hljs-keyword">else</span> {
+    mu_draw_control_text(ctx, buf, r, MU_COLOR_TEXT, opt);
+  }
+
+  <span class="hljs-keyword">return</span> res;
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">int</span> <span class="hljs-title">number_textbox</span><span class="hljs-params">(mu_Context *ctx, mu_Real *value, mu_Rect r, mu_Id id)</span> </span>{
+  <span class="hljs-keyword">if</span> (ctx-&gt;mouse_pressed == MU_MOUSE_LEFT &amp;&amp; ctx-&gt;key_down &amp; MU_KEY_SHIFT &amp;&amp;
+      ctx-&gt;hover == id
+  ) {
+    ctx-&gt;number_edit = id;
+    <span class="hljs-built_in">sprintf</span>(ctx-&gt;number_edit_buf, MU_REAL_FMT, *value);
+  }
+  <span class="hljs-keyword">if</span> (ctx-&gt;number_edit == id) {
+    <span class="hljs-keyword">int</span> res = mu_textbox_raw(
+      ctx, ctx-&gt;number_edit_buf, <span class="hljs-keyword">sizeof</span>(ctx-&gt;number_edit_buf), id, r, <span class="hljs-number">0</span>);
+    <span class="hljs-keyword">if</span> (res &amp; MU_RES_SUBMIT || ctx-&gt;focus != id) {
+      *value = strtod(ctx-&gt;number_edit_buf, <span class="hljs-literal">NULL</span>);
+      ctx-&gt;number_edit = <span class="hljs-number">0</span>;
+    } <span class="hljs-keyword">else</span> {
+      <span class="hljs-keyword">return</span> <span class="hljs-number">1</span>;
+    }
+  }
+  <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">mu_textbox_ex</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">char</span> *buf, <span class="hljs-keyword">int</span> bufsz, <span class="hljs-keyword">int</span> opt)</span> </span>{
+  mu_Id id = mu_get_id(ctx, &amp;buf, <span class="hljs-keyword">sizeof</span>(buf));
+  mu_Rect r = mu_layout_next(ctx);
+  <span class="hljs-keyword">return</span> mu_textbox_raw(ctx, buf, bufsz, id, r, opt);
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">mu_slider_ex</span><span class="hljs-params">(mu_Context *ctx, mu_Real *value, mu_Real low, mu_Real high,
+  mu_Real step, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *fmt, <span class="hljs-keyword">int</span> opt)</span>
+</span>{
+  <span class="hljs-keyword">char</span> buf[MU_MAX_FMT + <span class="hljs-number">1</span>];
+  mu_Rect thumb;
+  <span class="hljs-keyword">int</span> x, w, res = <span class="hljs-number">0</span>;
+  mu_Real last = *value, v = last;
+  mu_Id id = mu_get_id(ctx, &amp;value, <span class="hljs-keyword">sizeof</span>(value));
+  mu_Rect base = mu_layout_next(ctx);
+
+  <span class="hljs-comment">/* handle text input mode */</span>
+  <span class="hljs-keyword">if</span> (number_textbox(ctx, &amp;v, base, id)) { <span class="hljs-keyword">return</span> res; }
+
+  <span class="hljs-comment">/* handle normal mode */</span>
+  mu_update_control(ctx, id, base, opt);
+
+  <span class="hljs-comment">/* handle input */</span>
+  <span class="hljs-keyword">if</span> (ctx-&gt;focus == id &amp;&amp;
+      (ctx-&gt;mouse_down | ctx-&gt;mouse_pressed) == MU_MOUSE_LEFT)
+  {
+    v = low + (ctx-&gt;mouse_pos.x - base.x) * (high - low) / base.w;
+    <span class="hljs-keyword">if</span> (step) { v = (((v + step / <span class="hljs-number">2</span>) / step)) * step; }
+  }
+  <span class="hljs-comment">/* clamp and store value, update res */</span>
+  *value = v = mu_clamp(v, low, high);
+  <span class="hljs-keyword">if</span> (last != v) { res |= MU_RES_CHANGE; }
+
+  <span class="hljs-comment">/* draw base */</span>
+  mu_draw_control_frame(ctx, id, base, MU_COLOR_BASE, opt);
+  <span class="hljs-comment">/* draw thumb */</span>
+  w = ctx-&gt;style-&gt;thumb_size;
+  x = (v - low) * (base.w - w) / (high - low);
+  thumb = mu_rect(base.x + x, base.y, w, base.h);
+  mu_draw_control_frame(ctx, id, thumb, MU_COLOR_BUTTON, opt);
+  <span class="hljs-comment">/* draw text  */</span>
+  <span class="hljs-built_in">sprintf</span>(buf, fmt, v);
+  mu_draw_control_text(ctx, buf, base, MU_COLOR_TEXT, opt);
+
+  <span class="hljs-keyword">return</span> res;
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">mu_number_ex</span><span class="hljs-params">(mu_Context *ctx, mu_Real *value, mu_Real step,
+  <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *fmt, <span class="hljs-keyword">int</span> opt)</span>
+</span>{
+  <span class="hljs-keyword">char</span> buf[MU_MAX_FMT + <span class="hljs-number">1</span>];
+  <span class="hljs-keyword">int</span> res = <span class="hljs-number">0</span>;
+  mu_Id id = mu_get_id(ctx, &amp;value, <span class="hljs-keyword">sizeof</span>(value));
+  mu_Rect base = mu_layout_next(ctx);
+  mu_Real last = *value;
+
+  <span class="hljs-comment">/* handle text input mode */</span>
+  <span class="hljs-keyword">if</span> (number_textbox(ctx, value, base, id)) { <span class="hljs-keyword">return</span> res; }
+
+  <span class="hljs-comment">/* handle normal mode */</span>
+  mu_update_control(ctx, id, base, opt);
+
+  <span class="hljs-comment">/* handle input */</span>
+  <span class="hljs-keyword">if</span> (ctx-&gt;focus == id &amp;&amp; ctx-&gt;mouse_down == MU_MOUSE_LEFT) {
+    *value += ctx-&gt;mouse_delta.x * step;
+  }
+  <span class="hljs-comment">/* set flag if value changed */</span>
+  <span class="hljs-keyword">if</span> (*value != last) { res |= MU_RES_CHANGE; }
+
+  <span class="hljs-comment">/* draw base */</span>
+  mu_draw_control_frame(ctx, id, base, MU_COLOR_BASE, opt);
+  <span class="hljs-comment">/* draw text  */</span>
+  <span class="hljs-built_in">sprintf</span>(buf, fmt, *value);
+  mu_draw_control_text(ctx, buf, base, MU_COLOR_TEXT, opt);
+
+  <span class="hljs-keyword">return</span> res;
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">int</span> <span class="hljs-title">header</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *label, <span class="hljs-keyword">int</span> istreenode, <span class="hljs-keyword">int</span> opt)</span> </span>{
+  mu_Rect r;
+  <span class="hljs-keyword">int</span> active, expanded;
+  mu_Id id = mu_get_id(ctx, label, <span class="hljs-built_in">strlen</span>(label));
+  <span class="hljs-keyword">int</span> idx = mu_pool_get(ctx, ctx-&gt;treenode_pool, MU_TREENODEPOOL_SIZE, id);
+  <span class="hljs-keyword">int</span> width = <span class="hljs-number">-1</span>;
+  mu_layout_row(ctx, <span class="hljs-number">1</span>, &amp;width, <span class="hljs-number">0</span>);
+
+  active = (idx &gt;= <span class="hljs-number">0</span>);
+  expanded = (opt &amp; MU_OPT_EXPANDED) ? !active : active;
+  r = mu_layout_next(ctx);
+  mu_update_control(ctx, id, r, <span class="hljs-number">0</span>);
+
+  <span class="hljs-comment">/* handle click */</span>
+  active ^= (ctx-&gt;mouse_pressed == MU_MOUSE_LEFT &amp;&amp; ctx-&gt;focus == id);
+
+  <span class="hljs-comment">/* update pool ref */</span>
+  <span class="hljs-keyword">if</span> (idx &gt;= <span class="hljs-number">0</span>) {
+    <span class="hljs-keyword">if</span> (active) { mu_pool_update(ctx, ctx-&gt;treenode_pool, idx); }
+           <span class="hljs-keyword">else</span> { <span class="hljs-built_in">memset</span>(&amp;ctx-&gt;treenode_pool[idx], <span class="hljs-number">0</span>, <span class="hljs-keyword">sizeof</span>(mu_PoolItem)); }
+  } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (active) {
+    mu_pool_init(ctx, ctx-&gt;treenode_pool, MU_TREENODEPOOL_SIZE, id);
+  }
+
+  <span class="hljs-comment">/* draw */</span>
+  <span class="hljs-keyword">if</span> (istreenode) {
+    <span class="hljs-keyword">if</span> (ctx-&gt;hover == id) { ctx-&gt;draw_frame(ctx, r, MU_COLOR_BUTTONHOVER); }
+  } <span class="hljs-keyword">else</span> {
+    mu_draw_control_frame(ctx, id, r, MU_COLOR_BUTTON, <span class="hljs-number">0</span>);
+  }
+  mu_draw_icon(
+    ctx, expanded ? MU_ICON_EXPANDED : MU_ICON_COLLAPSED,
+    mu_rect(r.x, r.y, r.h, r.h), ctx-&gt;style-&gt;colors[MU_COLOR_TEXT]);
+  r.x += r.h - ctx-&gt;style-&gt;padding;
+  r.w -= r.h - ctx-&gt;style-&gt;padding;
+  mu_draw_control_text(ctx, label, r, MU_COLOR_TEXT, <span class="hljs-number">0</span>);
+
+  <span class="hljs-keyword">return</span> expanded ? MU_RES_ACTIVE : <span class="hljs-number">0</span>;
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">mu_header_ex</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *label, <span class="hljs-keyword">int</span> opt)</span> </span>{
+  <span class="hljs-keyword">return</span> header(ctx, label, <span class="hljs-number">0</span>, opt);
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">mu_begin_treenode_ex</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *label, <span class="hljs-keyword">int</span> opt)</span> </span>{
+  <span class="hljs-keyword">int</span> res = header(ctx, label, <span class="hljs-number">1</span>, opt);
+  <span class="hljs-keyword">if</span> (res &amp; MU_RES_ACTIVE) {
+    get_layout(ctx)-&gt;indent += ctx-&gt;style-&gt;indent;
+    push(ctx-&gt;id_stack, ctx-&gt;last_id);
+  }
+  <span class="hljs-keyword">return</span> res;
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_end_treenode</span><span class="hljs-params">(mu_Context *ctx)</span> </span>{
+  get_layout(ctx)-&gt;indent -= ctx-&gt;style-&gt;indent;
+  mu_pop_id(ctx);
+}
+
+
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> scrollbar(ctx, cnt, b, cs, x, y, w, h)                              \
+  do {                                                                      \
+    <span class="hljs-comment">/* only add scrollbar if content size is larger than body */</span>            \
+    int maxscroll = cs.y - b-&gt;h;                                            \
+                                                                            \
+    <span class="hljs-meta-keyword">if</span> (maxscroll &gt; 0 &amp;&amp; b-&gt;h &gt; 0) {                                        \
+      mu_Rect base, thumb;                                                  \
+      mu_Id id = mu_get_id(ctx, <span class="hljs-meta-string">&quot;!scrollbar&quot;</span> #y, 11);                       \
+                                                                            \
+      <span class="hljs-comment">/* get sizing / positioning */</span>                                        \
+      base = *b;                                                            \
+      base.x = b-&gt;x + b-&gt;w;                                                 \
+      base.w = ctx-&gt;style-&gt;scrollbar_size;                                  \
+                                                                            \
+      <span class="hljs-comment">/* handle input */</span>                                                    \
+      mu_update_control(ctx, id, base, 0);                                  \
+      <span class="hljs-meta-keyword">if</span> (ctx-&gt;focus == id &amp;&amp; ctx-&gt;mouse_down == MU_MOUSE_LEFT) {           \
+        cnt-&gt;scroll.y += ctx-&gt;mouse_delta.y * cs.y / base.h;                \
+      }                                                                     \
+      <span class="hljs-comment">/* clamp scroll to limits */</span>                                          \
+      cnt-&gt;scroll.y = mu_clamp(cnt-&gt;scroll.y, 0, maxscroll);                \
+                                                                            \
+      <span class="hljs-comment">/* draw base and thumb */</span>                                             \
+      ctx-&gt;draw_frame(ctx, base, MU_COLOR_SCROLLBASE);                      \
+      thumb = base;                                                         \
+      thumb.h = mu_max(ctx-&gt;style-&gt;thumb_size, base.h * b-&gt;h / cs.y);       \
+      thumb.y += cnt-&gt;scroll.y * (base.h - thumb.h) / maxscroll;            \
+      ctx-&gt;draw_frame(ctx, thumb, MU_COLOR_SCROLLTHUMB);                    \
+                                                                            \
+      <span class="hljs-comment">/* set this as the scroll_target (will get scrolled on mousewheel) */</span> \
+      <span class="hljs-comment">/* if the mouse is over it */</span>                                         \
+      <span class="hljs-meta-keyword">if</span> (mu_mouse_over(ctx, *b)) { ctx-&gt;scroll_target = cnt; }             \
+    } <span class="hljs-meta-keyword">else</span> {                                                                \
+      cnt-&gt;scroll.y = 0;                                                    \
+    }                                                                       \
+  } while (0)</span>
+
+
+<span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">scrollbars</span><span class="hljs-params">(mu_Context *ctx, mu_Container *cnt, mu_Rect *body)</span> </span>{
+  <span class="hljs-keyword">int</span> sz = ctx-&gt;style-&gt;scrollbar_size;
+  mu_Vec2 cs = cnt-&gt;content_size;
+  cs.x += ctx-&gt;style-&gt;padding * <span class="hljs-number">2</span>;
+  cs.y += ctx-&gt;style-&gt;padding * <span class="hljs-number">2</span>;
+  mu_push_clip_rect(ctx, *body);
+  <span class="hljs-comment">/* resize body to make room for scrollbars */</span>
+  <span class="hljs-keyword">if</span> (cs.y &gt; cnt-&gt;body.h) { body-&gt;w -= sz; }
+  <span class="hljs-keyword">if</span> (cs.x &gt; cnt-&gt;body.w) { body-&gt;h -= sz; }
+  <span class="hljs-comment">/* to create a horizontal or vertical scrollbar almost-identical code is
+  ** used; only the references to `x|y` `w|h` need to be switched */</span>
+  scrollbar(ctx, cnt, body, cs, x, y, w, h);
+  scrollbar(ctx, cnt, body, cs, y, x, h, w);
+  mu_pop_clip_rect(ctx);
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">push_container_body</span><span class="hljs-params">(
+  mu_Context *ctx, mu_Container *cnt, mu_Rect body, <span class="hljs-keyword">int</span> opt
+)</span> </span>{
+  <span class="hljs-keyword">if</span> (~opt &amp; MU_OPT_NOSCROLL) { scrollbars(ctx, cnt, &amp;body); }
+  push_layout(ctx, expand_rect(body, -ctx-&gt;style-&gt;padding), cnt-&gt;scroll);
+  cnt-&gt;body = body;
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">begin_root_container</span><span class="hljs-params">(mu_Context *ctx, mu_Container *cnt)</span> </span>{
+  push(ctx-&gt;container_stack, cnt);
+  <span class="hljs-comment">/* push container to roots list and push head command */</span>
+  push(ctx-&gt;root_list, cnt);
+  cnt-&gt;head = push_jump(ctx, <span class="hljs-literal">NULL</span>);
+  <span class="hljs-comment">/* set as hover root if the mouse is overlapping this container and it has a
+  ** higher zindex than the current hover root */</span>
+  <span class="hljs-keyword">if</span> (rect_overlaps_vec2(cnt-&gt;rect, ctx-&gt;mouse_pos) &amp;&amp;
+      (!ctx-&gt;next_hover_root || cnt-&gt;zindex &gt; ctx-&gt;next_hover_root-&gt;zindex)
+  ) {
+    ctx-&gt;next_hover_root = cnt;
+  }
+  <span class="hljs-comment">/* clipping is reset here in case a root-container is made within
+  ** another root-containers&#x27;s begin/end block; this prevents the inner
+  ** root-container being clipped to the outer */</span>
+  push(ctx-&gt;clip_stack, unclipped_rect);
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">end_root_container</span><span class="hljs-params">(mu_Context *ctx)</span> </span>{
+  <span class="hljs-comment">/* push tail &#x27;goto&#x27; jump command and set head &#x27;skip&#x27; command. the final steps
+  ** on initing these are done in mu_end() */</span>
+  mu_Container *cnt = mu_get_current_container(ctx);
+  cnt-&gt;tail = push_jump(ctx, <span class="hljs-literal">NULL</span>);
+  cnt-&gt;head-&gt;jump.dst = ctx-&gt;command_list.items + ctx-&gt;command_list.idx;
+  <span class="hljs-comment">/* pop base clip rect and container */</span>
+  mu_pop_clip_rect(ctx);
+  pop_container(ctx);
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">mu_begin_window_ex</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *title, mu_Rect rect, <span class="hljs-keyword">int</span> opt)</span> </span>{
+  mu_Rect body;
+  mu_Id id = mu_get_id(ctx, title, <span class="hljs-built_in">strlen</span>(title));
+  mu_Container *cnt = get_container(ctx, id, opt);
+  <span class="hljs-keyword">if</span> (!cnt || !cnt-&gt;open) { <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>; }
+  push(ctx-&gt;id_stack, id);
+
+  <span class="hljs-keyword">if</span> (cnt-&gt;rect.w == <span class="hljs-number">0</span>) { cnt-&gt;rect = rect; }
+  begin_root_container(ctx, cnt);
+  rect = body = cnt-&gt;rect;
+
+  <span class="hljs-comment">/* draw frame */</span>
+  <span class="hljs-keyword">if</span> (~opt &amp; MU_OPT_NOFRAME) {
+    ctx-&gt;draw_frame(ctx, rect, MU_COLOR_WINDOWBG);
+  }
+
+  <span class="hljs-comment">/* do title bar */</span>
+  <span class="hljs-keyword">if</span> (~opt &amp; MU_OPT_NOTITLE) {
+    mu_Rect tr = rect;
+    tr.h = ctx-&gt;style-&gt;title_height;
+    ctx-&gt;draw_frame(ctx, tr, MU_COLOR_TITLEBG);
+
+    <span class="hljs-comment">/* do title text */</span>
+    <span class="hljs-keyword">if</span> (~opt &amp; MU_OPT_NOTITLE) {
+      mu_Id id = mu_get_id(ctx, <span class="hljs-string">&quot;!title&quot;</span>, <span class="hljs-number">6</span>);
+      mu_update_control(ctx, id, tr, opt);
+      mu_draw_control_text(ctx, title, tr, MU_COLOR_TITLETEXT, opt);
+      <span class="hljs-keyword">if</span> (id == ctx-&gt;focus &amp;&amp; ctx-&gt;mouse_down == MU_MOUSE_LEFT) {
+        cnt-&gt;rect.x += ctx-&gt;mouse_delta.x;
+        cnt-&gt;rect.y += ctx-&gt;mouse_delta.y;
+      }
+      body.y += tr.h;
+      body.h -= tr.h;
+    }
+
+    <span class="hljs-comment">/* do `close` button */</span>
+    <span class="hljs-keyword">if</span> (~opt &amp; MU_OPT_NOCLOSE) {
+      mu_Id id = mu_get_id(ctx, <span class="hljs-string">&quot;!close&quot;</span>, <span class="hljs-number">6</span>);
+      mu_Rect r = mu_rect(tr.x + tr.w - tr.h, tr.y, tr.h, tr.h);
+      tr.w -= r.w;
+      mu_draw_icon(ctx, MU_ICON_CLOSE, r, ctx-&gt;style-&gt;colors[MU_COLOR_TITLETEXT]);
+      mu_update_control(ctx, id, r, opt);
+      <span class="hljs-keyword">if</span> (ctx-&gt;mouse_pressed == MU_MOUSE_LEFT &amp;&amp; id == ctx-&gt;focus) {
+        cnt-&gt;open = <span class="hljs-number">0</span>;
+      }
+    }
+  }
+
+  push_container_body(ctx, cnt, body, opt);
+
+  <span class="hljs-comment">/* do `resize` handle */</span>
+  <span class="hljs-keyword">if</span> (~opt &amp; MU_OPT_NORESIZE) {
+    <span class="hljs-keyword">int</span> sz = ctx-&gt;style-&gt;title_height;
+    mu_Id id = mu_get_id(ctx, <span class="hljs-string">&quot;!resize&quot;</span>, <span class="hljs-number">7</span>);
+    mu_Rect r = mu_rect(rect.x + rect.w - sz, rect.y + rect.h - sz, sz, sz);
+    mu_update_control(ctx, id, r, opt);
+    <span class="hljs-keyword">if</span> (id == ctx-&gt;focus &amp;&amp; ctx-&gt;mouse_down == MU_MOUSE_LEFT) {
+      cnt-&gt;rect.w = mu_max(<span class="hljs-number">96</span>, cnt-&gt;rect.w + ctx-&gt;mouse_delta.x);
+      cnt-&gt;rect.h = mu_max(<span class="hljs-number">64</span>, cnt-&gt;rect.h + ctx-&gt;mouse_delta.y);
+    }
+  }
+
+  <span class="hljs-comment">/* resize to content size */</span>
+  <span class="hljs-keyword">if</span> (opt &amp; MU_OPT_AUTOSIZE) {
+    mu_Rect r = get_layout(ctx)-&gt;body;
+    cnt-&gt;rect.w = cnt-&gt;content_size.x + (cnt-&gt;rect.w - r.w);
+    cnt-&gt;rect.h = cnt-&gt;content_size.y + (cnt-&gt;rect.h - r.h);
+  }
+
+  <span class="hljs-comment">/* close if this is a popup window and elsewhere was clicked */</span>
+  <span class="hljs-keyword">if</span> (opt &amp; MU_OPT_POPUP &amp;&amp; ctx-&gt;mouse_pressed &amp;&amp; ctx-&gt;hover_root != cnt) {
+    cnt-&gt;open = <span class="hljs-number">0</span>;
+  }
+
+  mu_push_clip_rect(ctx, cnt-&gt;body);
+  <span class="hljs-keyword">return</span> MU_RES_ACTIVE;
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_end_window</span><span class="hljs-params">(mu_Context *ctx)</span> </span>{
+  mu_pop_clip_rect(ctx);
+  end_root_container(ctx);
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_open_popup</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *name)</span> </span>{
+  mu_Container *cnt = mu_get_container(ctx, name);
+  <span class="hljs-comment">/* set as hover root so popup isn&#x27;t closed in begin_window_ex()  */</span>
+  ctx-&gt;hover_root = ctx-&gt;next_hover_root = cnt;
+  <span class="hljs-comment">/* position at mouse cursor, open and bring-to-front */</span>
+  cnt-&gt;rect = mu_rect(ctx-&gt;mouse_pos.x, ctx-&gt;mouse_pos.y, <span class="hljs-number">1</span>, <span class="hljs-number">1</span>);
+  cnt-&gt;open = <span class="hljs-number">1</span>;
+  mu_bring_to_front(ctx, cnt);
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">mu_begin_popup</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *name)</span> </span>{
+  <span class="hljs-keyword">int</span> opt = MU_OPT_POPUP | MU_OPT_AUTOSIZE | MU_OPT_NORESIZE |
+            MU_OPT_NOSCROLL | MU_OPT_NOTITLE | MU_OPT_CLOSED;
+  <span class="hljs-keyword">return</span> mu_begin_window_ex(ctx, name, mu_rect(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>), opt);
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_end_popup</span><span class="hljs-params">(mu_Context *ctx)</span> </span>{
+  mu_end_window(ctx);
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_begin_panel_ex</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *name, <span class="hljs-keyword">int</span> opt)</span> </span>{
+  mu_Container *cnt;
+  mu_push_id(ctx, name, <span class="hljs-built_in">strlen</span>(name));
+  cnt = get_container(ctx, ctx-&gt;last_id, opt);
+  cnt-&gt;rect = mu_layout_next(ctx);
+  <span class="hljs-keyword">if</span> (~opt &amp; MU_OPT_NOFRAME) {
+    ctx-&gt;draw_frame(ctx, cnt-&gt;rect, MU_COLOR_PANELBG);
+  }
+  push(ctx-&gt;container_stack, cnt);
+  push_container_body(ctx, cnt, cnt-&gt;rect, opt);
+  mu_push_clip_rect(ctx, cnt-&gt;body);
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_end_panel</span><span class="hljs-params">(mu_Context *ctx)</span> </span>{
+  mu_pop_clip_rect(ctx);
+  pop_container(ctx);
+}</pre></div></div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>
