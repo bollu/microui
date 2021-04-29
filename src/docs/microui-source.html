@@ -1325,7 +1325,7 @@ TODO: why <em>rightmost</em>? </p>
 }
 
 
-<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_push_clip</span><span class="hljs-params">(mu_Context *ctx, mu_Rect rect)</span> </span>{
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_draw_clip</span><span class="hljs-params">(mu_Context *ctx, mu_Rect rect)</span> </span>{
   mu_Command *cmd;
   cmd = mu_push_command(ctx, MU_COMMAND_CLIP, <span class="hljs-keyword">sizeof</span>(mu_ClipCommand));
   cmd-&gt;clip.rect = rect;
@@ -1385,7 +1385,7 @@ TODO: why <em>rightmost</em>? </p>
     pos.x, pos.y, ctx-&gt;text_width(font, str, len), ctx-&gt;text_height(font));
   <span class="hljs-keyword">int</span> clipped = mu_check_clip(ctx, rect);
   <span class="hljs-keyword">if</span> (clipped == MU_CLIP_ALL ) { <span class="hljs-keyword">return</span>; }
-  <span class="hljs-keyword">if</span> (clipped == MU_CLIP_PART) { mu_push_clip(ctx, mu_get_clip_rect(ctx)); }
+  <span class="hljs-keyword">if</span> (clipped == MU_CLIP_PART) { mu_draw_clip(ctx, mu_get_clip_rect(ctx)); }
   <span class="hljs-comment">/* add command */</span>
   <span class="hljs-keyword">if</span> (len &lt; <span class="hljs-number">0</span>) { len = <span class="hljs-built_in">strlen</span>(str); }
   cmd = mu_push_command(ctx, MU_COMMAND_TEXT, <span class="hljs-keyword">sizeof</span>(mu_TextCommand) + len);
@@ -1395,7 +1395,7 @@ TODO: why <em>rightmost</em>? </p>
   cmd-&gt;text.color = color;
   cmd-&gt;text.font = font;
   <span class="hljs-comment">/* reset clipping if it was set */</span>
-  <span class="hljs-keyword">if</span> (clipped) { mu_push_clip(ctx, unclipped_rect); }
+  <span class="hljs-keyword">if</span> (clipped) { mu_draw_clip(ctx, unclipped_rect); }
 }
 
 
@@ -1404,14 +1404,14 @@ TODO: why <em>rightmost</em>? </p>
   <span class="hljs-comment">/* do clip command if the rect isn&#x27;t fully contained within the cliprect */</span>
   <span class="hljs-keyword">int</span> clipped = mu_check_clip(ctx, rect);
   <span class="hljs-keyword">if</span> (clipped == MU_CLIP_ALL ) { <span class="hljs-keyword">return</span>; }
-  <span class="hljs-keyword">if</span> (clipped == MU_CLIP_PART) { mu_push_clip(ctx, mu_get_clip_rect(ctx)); }
+  <span class="hljs-keyword">if</span> (clipped == MU_CLIP_PART) { mu_draw_clip(ctx, mu_get_clip_rect(ctx)); }
   <span class="hljs-comment">/* do icon command */</span>
   cmd = mu_push_command(ctx, MU_COMMAND_ICON, <span class="hljs-keyword">sizeof</span>(mu_IconCommand));
   cmd-&gt;icon.id = id;
   cmd-&gt;icon.rect = rect;
   cmd-&gt;icon.color = color;
   <span class="hljs-comment">/* reset clipping if it was set */</span>
-  <span class="hljs-keyword">if</span> (clipped) { mu_push_clip(ctx, unclipped_rect); }
+  <span class="hljs-keyword">if</span> (clipped) { mu_draw_clip(ctx, unclipped_rect); }
 }
 
 
