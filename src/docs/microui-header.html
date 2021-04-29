@@ -258,8 +258,8 @@
   mu_Container *hover_root; <span class="hljs-comment">// ?</span>
   mu_Container *next_hover_root; <span class="hljs-comment">// ?</span>
   mu_Container *scroll_target; <span class="hljs-comment">// ?</span>
-  <span class="hljs-keyword">char</span> number_edit_buf[MU_MAX_FMT]; <span class="hljs-comment">// ?</span>
-  mu_Id number_edit; <span class="hljs-comment">// ?</span>
+  <span class="hljs-keyword">char</span> number_edit_buf[MU_MAX_FMT]; <span class="hljs-comment">// buffer for entering number as text.</span>
+  mu_Id number_edit; <span class="hljs-comment">// item where number is being entered as text.</span>
   <span class="hljs-comment">/* stacks */</span>
   mu_stack(<span class="hljs-keyword">char</span>, MU_COMMANDLIST_SIZE) command_list; <span class="hljs-comment">// list of draw commands to be interpreted by the client.</span>
   mu_stack(mu_Container*, MU_ROOTLIST_SIZE) root_list; <span class="hljs-comment">// ?</span>

@@ -398,16 +398,6 @@ function.</p>
   hash(&amp;res, data, size);
   ctx-&gt;last_id = res;
   <span class="hljs-keyword">return</span> res;
-}
-
-
-<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_push_id</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">void</span> *data, <span class="hljs-keyword">int</span> size)</span> </span>{
-  push(ctx-&gt;id_stack, mu_get_id(ctx, data, size));
-}
-
-
-<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_pop_id</span><span class="hljs-params">(mu_Context *ctx)</span> </span>{
-  pop(ctx-&gt;id_stack);
 }</pre></div></div>
             
         </li>
@@ -419,9 +409,13 @@ function.</p>
               <div class="sswrap ">
                 <a class="ss" href="#section-14">&#x00a7;</a>
               </div>
-              <h2 id="2-call-mu_finalize_events_begin_draw">2. Call <code>mu_finalize_events_begin_draw</code></h2>
+              <p>create a new ID.</p>
 
             </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_push_id</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">void</span> *data, <span class="hljs-keyword">int</span> size)</span> </span>{
+  push(ctx-&gt;id_stack, mu_get_id(ctx, data, size));
+}</pre></div></div>
             
         </li>
         
@@ -431,6 +425,36 @@ function.</p>
               
               <div class="sswrap ">
                 <a class="ss" href="#section-15">&#x00a7;</a>
+              </div>
+              <p>pop the last ID that was pushed.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_pop_id</span><span class="hljs-params">(mu_Context *ctx)</span> </span>{
+  pop(ctx-&gt;id_stack);
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-16">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-16">&#x00a7;</a>
+              </div>
+              <h2 id="2-call-mu_finalize_events_begin_draw">2. Call <code>mu_finalize_events_begin_draw</code></h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-17">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-17">&#x00a7;</a>
               </div>
               <p>After handling the input the <code>mu_finalize_events_begin_draw()</code> function must be called before
 processing your UI:</p>
@@ -445,11 +469,11 @@ processing your UI:</p>
         </li>
         
         
-        <li id="section-16">
+        <li id="section-18">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-16">&#x00a7;</a>
+                <a class="ss" href="#section-18">&#x00a7;</a>
               </div>
               <p>check that text_width and text_height are initialized.</p>
 
@@ -469,11 +493,11 @@ processing your UI:</p>
         </li>
         
         
-        <li id="section-17">
+        <li id="section-19">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-17">&#x00a7;</a>
+                <a class="ss" href="#section-19">&#x00a7;</a>
               </div>
               <p>Before any controls can be used we must begin a window using one of the
 <code>mu_begin_window...</code> or <code>mu_begin_popup...</code> functions. The <code>mu_begin_...</code> window
@@ -506,11 +530,11 @@ normal.</p>
         </li>
         
         
-        <li id="section-18">
+        <li id="section-20">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-18">&#x00a7;</a>
+                <a class="ss" href="#section-20">&#x00a7;</a>
               </div>
               <p>hash object based on title.</p>
 
@@ -521,11 +545,11 @@ normal.</p>
         </li>
         
         
-        <li id="section-19">
+        <li id="section-21">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-19">&#x00a7;</a>
+                <a class="ss" href="#section-21">&#x00a7;</a>
               </div>
               <p>find the container for this, and raise it to the front.</p>
 
@@ -536,11 +560,11 @@ normal.</p>
         </li>
         
         
-        <li id="section-20">
+        <li id="section-22">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-20">&#x00a7;</a>
+                <a class="ss" href="#section-22">&#x00a7;</a>
               </div>
               <p>if we can’t find a container, or it is closed, give up.</p>
 
@@ -551,11 +575,11 @@ normal.</p>
         </li>
         
         
-        <li id="section-21">
+        <li id="section-23">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-21">&#x00a7;</a>
+                <a class="ss" href="#section-23">&#x00a7;</a>
               </div>
               <p>push the container ID onto the stack. (TODO: why?)</p>
 
@@ -566,11 +590,11 @@ normal.</p>
         </li>
         
         
-        <li id="section-22">
+        <li id="section-24">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-22">&#x00a7;</a>
+                <a class="ss" href="#section-24">&#x00a7;</a>
               </div>
               <p>if container is new(?), set its rect. (TODO: WHY?)</p>
 
@@ -586,11 +610,11 @@ normal.</p>
         </li>
         
         
-        <li id="section-23">
+        <li id="section-25">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-23">&#x00a7;</a>
+                <a class="ss" href="#section-25">&#x00a7;</a>
               </div>
               <p>if opt does NOT have MU_OPT_NOFRAME set:</p>
 
@@ -674,11 +698,11 @@ normal.</p>
         </li>
         
         
-        <li id="section-24">
+        <li id="section-26">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-24">&#x00a7;</a>
+                <a class="ss" href="#section-26">&#x00a7;</a>
               </div>
               <p>While inside a window block we can safely process controls. Controls that allow
 user interaction return a bitset of <code>MU_RES_...</code> values. Some controls — such
@@ -786,11 +810,11 @@ mu_layout_set_next(ctx, rect, <span class="hljs-number">0</span>);
         </li>
         
         
-        <li id="section-25">
+        <li id="section-27">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-25">&#x00a7;</a>
+                <a class="ss" href="#section-27">&#x00a7;</a>
               </div>
               <p>If you want to position controls arbitrarily inside a container the
 <code>relative</code> argument of <code>mu_layout_set_next()</code> should be true:</p>
@@ -864,11 +888,11 @@ clicked increments that integer, could be implemented as such:</p>
         </li>
         
         
-        <li id="section-26">
+        <li id="section-28">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-26">&#x00a7;</a>
+                <a class="ss" href="#section-28">&#x00a7;</a>
               </div>
               <h1 id="vectors">Vectors</h1>
 <p>these are used to define graphics primitives.</p>
@@ -899,11 +923,11 @@ clicked increments that integer, could be implemented as such:</p>
         </li>
         
         
-        <li id="section-27">
+        <li id="section-29">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-27">&#x00a7;</a>
+                <a class="ss" href="#section-29">&#x00a7;</a>
               </div>
               <h1 id="expand">Expand</h1>
 <p>expands a rectangle by <code>n</code> in all directions</p>
@@ -918,11 +942,11 @@ clicked increments that integer, could be implemented as such:</p>
         </li>
         
         
-        <li id="section-28">
+        <li id="section-30">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-28">&#x00a7;</a>
+                <a class="ss" href="#section-30">&#x00a7;</a>
               </div>
               <h1 id="intersect">Intersect</h1>
 <p>Intersects two rectangles.</p>
@@ -943,11 +967,11 @@ clicked increments that integer, could be implemented as such:</p>
         </li>
         
         
-        <li id="section-29">
+        <li id="section-31">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-29">&#x00a7;</a>
+                <a class="ss" href="#section-31">&#x00a7;</a>
               </div>
               <p>Overlap
 Check if vector lies in rectangle</p>
@@ -961,11 +985,11 @@ Check if vector lies in rectangle</p>
         </li>
         
         
-        <li id="section-30">
+        <li id="section-32">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-30">&#x00a7;</a>
+                <a class="ss" href="#section-32">&#x00a7;</a>
               </div>
               <p>Draw Frame: draw a frame, with an optional border.</p>
 
@@ -985,11 +1009,11 @@ Check if vector lies in rectangle</p>
         </li>
         
         
-        <li id="section-31">
+        <li id="section-33">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-31">&#x00a7;</a>
+                <a class="ss" href="#section-33">&#x00a7;</a>
               </div>
               <p>Compare Z index
 Retuurn difference of Z indeces between containers <code>a</code> and <code>b</code>.</p>
@@ -1003,11 +1027,11 @@ Retuurn difference of Z indeces between containers <code>a</code> and <code>b</c
         </li>
         
         
-        <li id="section-32">
+        <li id="section-34">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-32">&#x00a7;</a>
+                <a class="ss" href="#section-34">&#x00a7;</a>
               </div>
               <h1 id="end">End</h1>
 
@@ -1016,11 +1040,11 @@ Retuurn difference of Z indeces between containers <code>a</code> and <code>b</c
         </li>
         
         
-        <li id="section-33">
+        <li id="section-35">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-33">&#x00a7;</a>
+                <a class="ss" href="#section-35">&#x00a7;</a>
               </div>
               
             </div>
@@ -1028,11 +1052,11 @@ Retuurn difference of Z indeces between containers <code>a</code> and <code>b</c
         </li>
         
         
-        <li id="section-34">
+        <li id="section-36">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-34">&#x00a7;</a>
+                <a class="ss" href="#section-36">&#x00a7;</a>
               </div>
               <p>Check that all stacks have been flushed, apply scrolling and events.</p>
 
@@ -1049,11 +1073,11 @@ Retuurn difference of Z indeces between containers <code>a</code> and <code>b</c
         </li>
         
         
-        <li id="section-35">
+        <li id="section-37">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-35">&#x00a7;</a>
+                <a class="ss" href="#section-37">&#x00a7;</a>
               </div>
               <p>handle scroll input</p>
 
@@ -1067,11 +1091,11 @@ Retuurn difference of Z indeces between containers <code>a</code> and <code>b</c
         </li>
         
         
-        <li id="section-36">
+        <li id="section-38">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-36">&#x00a7;</a>
+                <a class="ss" href="#section-38">&#x00a7;</a>
               </div>
               <p>unset focus if focus id was not touched this frame</p>
 
@@ -1083,11 +1107,11 @@ Retuurn difference of Z indeces between containers <code>a</code> and <code>b</c
         </li>
         
         
-        <li id="section-37">
+        <li id="section-39">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-37">&#x00a7;</a>
+                <a class="ss" href="#section-39">&#x00a7;</a>
               </div>
               <p>bring hover root to front if mouse was pressed</p>
 
@@ -1103,11 +1127,11 @@ Retuurn difference of Z indeces between containers <code>a</code> and <code>b</c
         </li>
         
         
-        <li id="section-38">
+        <li id="section-40">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-38">&#x00a7;</a>
+                <a class="ss" href="#section-40">&#x00a7;</a>
               </div>
               <p>reset input state</p>
 
@@ -1122,11 +1146,11 @@ Retuurn difference of Z indeces between containers <code>a</code> and <code>b</c
         </li>
         
         
-        <li id="section-39">
+        <li id="section-41">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-39">&#x00a7;</a>
+                <a class="ss" href="#section-41">&#x00a7;</a>
               </div>
               <p>sort root containers by zindex</p>
 
@@ -1138,11 +1162,11 @@ Retuurn difference of Z indeces between containers <code>a</code> and <code>b</c
         </li>
         
         
-        <li id="section-40">
+        <li id="section-42">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-40">&#x00a7;</a>
+                <a class="ss" href="#section-42">&#x00a7;</a>
               </div>
               <p>TODO: what is a jump command?
 sset root container jump commands</p>
@@ -1215,11 +1239,11 @@ sset root container jump commands</p>
         </li>
         
         
-        <li id="section-41">
+        <li id="section-43">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-41">&#x00a7;</a>
+                <a class="ss" href="#section-43">&#x00a7;</a>
               </div>
               <p>return top of layout stack</p>
 
@@ -1257,11 +1281,11 @@ sset root container jump commands</p>
         </li>
         
         
-        <li id="section-42">
+        <li id="section-44">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-42">&#x00a7;</a>
+                <a class="ss" href="#section-44">&#x00a7;</a>
               </div>
               <p>TODO: why is this || ?</p>
 
@@ -1282,11 +1306,11 @@ sset root container jump commands</p>
         </li>
         
         
-        <li id="section-43">
+        <li id="section-45">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-43">&#x00a7;</a>
+                <a class="ss" href="#section-45">&#x00a7;</a>
               </div>
               <p>bring container to front by increasing z-index.</p>
 
@@ -1320,11 +1344,11 @@ sset root container jump commands</p>
         </li>
         
         
-        <li id="section-44">
+        <li id="section-46">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-44">&#x00a7;</a>
+                <a class="ss" href="#section-46">&#x00a7;</a>
               </div>
               <p>find <em>rightmost</em> old slot and reuse it.
 TODO: why <em>rightmost</em>? </p>
@@ -1375,11 +1399,11 @@ TODO: why <em>rightmost</em>? </p>
         </li>
         
         
-        <li id="section-45">
+        <li id="section-47">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-45">&#x00a7;</a>
+                <a class="ss" href="#section-47">&#x00a7;</a>
               </div>
               <p>return 1 if there is a command to be processsed, and 0 if all commands are exhausted.</p>
 
@@ -1391,11 +1415,11 @@ TODO: why <em>rightmost</em>? </p>
         </li>
         
         
-        <li id="section-46">
+        <li id="section-48">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-46">&#x00a7;</a>
+                <a class="ss" href="#section-48">&#x00a7;</a>
               </div>
               <p>go to the next location in memory where we have a command.</p>
 
@@ -1407,11 +1431,11 @@ TODO: why <em>rightmost</em>? </p>
         </li>
         
         
-        <li id="section-47">
+        <li id="section-49">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-47">&#x00a7;</a>
+                <a class="ss" href="#section-49">&#x00a7;</a>
               </div>
               <p>start at first command.</p>
 
@@ -1423,11 +1447,11 @@ TODO: why <em>rightmost</em>? </p>
         </li>
         
         
-        <li id="section-48">
+        <li id="section-50">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-48">&#x00a7;</a>
+                <a class="ss" href="#section-50">&#x00a7;</a>
               </div>
               <p>follow jump commands till we reach a non-jump command, or reach end of list.</p>
 
@@ -1451,11 +1475,11 @@ TODO: why <em>rightmost</em>? </p>
         </li>
         
         
-        <li id="section-49">
+        <li id="section-51">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-49">&#x00a7;</a>
+                <a class="ss" href="#section-51">&#x00a7;</a>
               </div>
               <p>queue a clipping command.</p>
 
@@ -1470,11 +1494,11 @@ TODO: why <em>rightmost</em>? </p>
         </li>
         
         
-        <li id="section-50">
+        <li id="section-52">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-50">&#x00a7;</a>
+                <a class="ss" href="#section-52">&#x00a7;</a>
               </div>
               <p>queue a draw rectangle command.</p>
 
@@ -1493,11 +1517,11 @@ TODO: why <em>rightmost</em>? </p>
         </li>
         
         
-        <li id="section-51">
+        <li id="section-53">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-51">&#x00a7;</a>
+                <a class="ss" href="#section-53">&#x00a7;</a>
               </div>
               <p>Draw a box of 1px width around the rectangle.</p>
 
@@ -1556,11 +1580,11 @@ TODO: why <em>rightmost</em>? </p>
         </li>
         
         
-        <li id="section-52">
+        <li id="section-54">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-52">&#x00a7;</a>
+                <a class="ss" href="#section-54">&#x00a7;</a>
               </div>
               <p>Should we have begin/end for row as well as column?</p>
 
@@ -1582,11 +1606,11 @@ TODO: why <em>rightmost</em>? </p>
         </li>
         
         
-        <li id="section-53">
+        <li id="section-55">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-53">&#x00a7;</a>
+                <a class="ss" href="#section-55">&#x00a7;</a>
               </div>
               <p>top of layout stack; the column we had begun</p>
 
@@ -1600,11 +1624,11 @@ TODO: why <em>rightmost</em>? </p>
         </li>
         
         
-        <li id="section-54">
+        <li id="section-56">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-54">&#x00a7;</a>
+                <a class="ss" href="#section-56">&#x00a7;</a>
               </div>
               <p>TODO: think about these computations.
 The idea is to reflow the parent of the column, based on the column data.</p>
@@ -1620,11 +1644,11 @@ The idea is to reflow the parent of the column, based on the column data.</p>
         </li>
         
         
-        <li id="section-55">
+        <li id="section-57">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-55">&#x00a7;</a>
+                <a class="ss" href="#section-57">&#x00a7;</a>
               </div>
               <p>create a new layout row.</p>
 
@@ -1645,11 +1669,11 @@ The idea is to reflow the parent of the column, based on the column data.</p>
         </li>
         
         
-        <li id="section-56">
+        <li id="section-58">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-56">&#x00a7;</a>
+                <a class="ss" href="#section-58">&#x00a7;</a>
               </div>
               <p>set layout width.</p>
 
@@ -1662,11 +1686,11 @@ The idea is to reflow the parent of the column, based on the column data.</p>
         </li>
         
         
-        <li id="section-57">
+        <li id="section-59">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-57">&#x00a7;</a>
+                <a class="ss" href="#section-59">&#x00a7;</a>
               </div>
               <p>set layout height.</p>
 
@@ -1686,11 +1710,11 @@ The idea is to reflow the parent of the column, based on the column data.</p>
         </li>
         
         
-        <li id="section-58">
+        <li id="section-60">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-58">&#x00a7;</a>
+                <a class="ss" href="#section-60">&#x00a7;</a>
               </div>
               <p>key function that performs layouting!</p>
 
@@ -1704,11 +1728,11 @@ The idea is to reflow the parent of the column, based on the column data.</p>
         </li>
         
         
-        <li id="section-59">
+        <li id="section-61">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-59">&#x00a7;</a>
+                <a class="ss" href="#section-61">&#x00a7;</a>
               </div>
               <p>no idea what it means for next_type to be unset!</p>
 
@@ -1723,11 +1747,11 @@ The idea is to reflow the parent of the column, based on the column data.</p>
         </li>
         
         
-        <li id="section-60">
+        <li id="section-62">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-60">&#x00a7;</a>
+                <a class="ss" href="#section-62">&#x00a7;</a>
               </div>
               <p>TODO: we don’t increment item_index?</p>
 
@@ -1744,11 +1768,11 @@ The idea is to reflow the parent of the column, based on the column data.</p>
         </li>
         
         
-        <li id="section-61">
+        <li id="section-63">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-61">&#x00a7;</a>
+                <a class="ss" href="#section-63">&#x00a7;</a>
               </div>
               <p>position</p>
 
@@ -1760,11 +1784,11 @@ The idea is to reflow the parent of the column, based on the column data.</p>
         </li>
         
         
-        <li id="section-62">
+        <li id="section-64">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-62">&#x00a7;</a>
+                <a class="ss" href="#section-64">&#x00a7;</a>
               </div>
               <p>size </p>
 
@@ -1776,11 +1800,11 @@ The idea is to reflow the parent of the column, based on the column data.</p>
         </li>
         
         
-        <li id="section-63">
+        <li id="section-65">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-63">&#x00a7;</a>
+                <a class="ss" href="#section-65">&#x00a7;</a>
               </div>
               <p>if zero, then auto-size??</p>
 
@@ -1792,11 +1816,11 @@ The idea is to reflow the parent of the column, based on the column data.</p>
         </li>
         
         
-        <li id="section-64">
+        <li id="section-66">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-64">&#x00a7;</a>
+                <a class="ss" href="#section-66">&#x00a7;</a>
               </div>
               <p>negative width, height is interpreted as: leave this much room from the border.</p>
 
@@ -1831,11 +1855,11 @@ The idea is to reflow the parent of the column, based on the column data.</p>
         </li>
         
         
-        <li id="section-65">
+        <li id="section-67">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-65">&#x00a7;</a>
+                <a class="ss" href="#section-67">&#x00a7;</a>
               </div>
               <p>check if hover_root is currently being drawn. This is checked
 by walking the container stack, looking for our element.</p>
@@ -1856,11 +1880,11 @@ by walking the container stack, looking for our element.</p>
         </li>
         
         
-        <li id="section-66">
+        <li id="section-68">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-66">&#x00a7;</a>
+                <a class="ss" href="#section-68">&#x00a7;</a>
               </div>
               <p>draw a frame which colors based on focus/hover. Hence, a “control frame”,
 such as a button.</p>
@@ -1878,11 +1902,11 @@ such as a button.</p>
         </li>
         
         
-        <li id="section-67">
+        <li id="section-69">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-67">&#x00a7;</a>
+                <a class="ss" href="#section-69">&#x00a7;</a>
               </div>
               <p>draw text clipped to the rectangle.</p>
 
@@ -1905,10 +1929,24 @@ such as a button.</p>
   }
   mu_draw_text(ctx, font, str, <span class="hljs-number">-1</span>, pos, ctx-&gt;style-&gt;colors[colorid]);
   mu_pop_clip_rect(ctx);
-}
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-70">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-70">&#x00a7;</a>
+              </div>
+              <p>check that mouse is where we are, and that we are being drawn,
+and that we are being hovered on (TODO: I guess the last check is to make sure
+there is nothing above us, z-index wise?)</p>
 
-
-<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">mu_mouse_over</span><span class="hljs-params">(mu_Context *ctx, mu_Rect rect)</span> </span>{
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">mu_mouse_over</span><span class="hljs-params">(mu_Context *ctx, mu_Rect rect)</span> </span>{
   <span class="hljs-keyword">return</span> rect_overlaps_vec2(rect, ctx-&gt;mouse_pos) &amp;&amp;
     rect_overlaps_vec2(mu_get_clip_rect(ctx), ctx-&gt;mouse_pos) &amp;&amp;
     in_hover_root(ctx);
@@ -1917,11 +1955,11 @@ such as a button.</p>
         </li>
         
         
-        <li id="section-68">
+        <li id="section-71">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-68">&#x00a7;</a>
+                <a class="ss" href="#section-71">&#x00a7;</a>
               </div>
               <p>update the state of the context relative to the object <code>id</code>, which inhabits location
 <code>rect</code>. this updates:</p>
@@ -2025,10 +2063,23 @@ such as a button.</p>
   r = mu_rect(r.x + box.w, r.y, r.w - box.w, r.h);
   mu_draw_control_text(ctx, label, r, MU_COLOR_TEXT, <span class="hljs-number">0</span>);
   <span class="hljs-keyword">return</span> res;
-}
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-72">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-72">&#x00a7;</a>
+              </div>
+              <p>draw a textbox with the text from buf, and also merge data from ctx-&gt;input_text, and
+then handle key presses such ash backspace and ENTER.</p>
 
-
-<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">mu_textbox_raw</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">char</span> *buf, <span class="hljs-keyword">int</span> bufsz, mu_Id id, mu_Rect r,
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">mu_textbox_raw</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">char</span> *buf, <span class="hljs-keyword">int</span> bufsz, mu_Id id, mu_Rect r,
   <span class="hljs-keyword">int</span> opt)</span>
 </span>{
   <span class="hljs-keyword">int</span> res = <span class="hljs-number">0</span>;
@@ -2046,8 +2097,22 @@ such as a button.</p>
     }
     <span class="hljs-comment">/* handle backspace */</span>
     <span class="hljs-keyword">if</span> (ctx-&gt;key_pressed &amp; MU_KEY_BACKSPACE &amp;&amp; len &gt; <span class="hljs-number">0</span>) {
-      <span class="hljs-comment">/* skip utf-8 continuation bytes */</span>
-      <span class="hljs-keyword">while</span> ((buf[--len] &amp; <span class="hljs-number">0xc0</span>) == <span class="hljs-number">0x80</span> &amp;&amp; len &gt; <span class="hljs-number">0</span>);
+      <span class="hljs-comment">/* skip utf-8 continuation bytes */</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-73">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-73">&#x00a7;</a>
+              </div>
+              <p>TODO: what is a continuation byte?</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      <span class="hljs-keyword">while</span> ((buf[--len] &amp; <span class="hljs-number">0xc0</span>) == <span class="hljs-number">0x80</span> &amp;&amp; len &gt; <span class="hljs-number">0</span>);
       buf[len] = <span class="hljs-string">&#x27;\0&#x27;</span>;
       res |= MU_RES_CHANGE;
     }
@@ -2077,10 +2142,22 @@ such as a button.</p>
   }
 
   <span class="hljs-keyword">return</span> res;
-}
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-74">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-74">&#x00a7;</a>
+              </div>
+              <p>draw textbox which holds numbers.</p>
 
-
-<span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">int</span> <span class="hljs-title">number_textbox</span><span class="hljs-params">(mu_Context *ctx, mu_Real *value, mu_Rect r, mu_Id id)</span> </span>{
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">int</span> <span class="hljs-title">number_textbox</span><span class="hljs-params">(mu_Context *ctx, mu_Real *value, mu_Rect r, mu_Id id)</span> </span>{
   <span class="hljs-keyword">if</span> (ctx-&gt;mouse_pressed == MU_MOUSE_LEFT &amp;&amp; ctx-&gt;key_down &amp; MU_KEY_SHIFT &amp;&amp;
       ctx-&gt;hover == id
   ) {
@@ -2230,11 +2307,11 @@ such as a button.</p>
         </li>
         
         
-        <li id="section-69">
+        <li id="section-75">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-69">&#x00a7;</a>
+                <a class="ss" href="#section-75">&#x00a7;</a>
               </div>
               <p>what precisely is a treenode?</p>
 
@@ -2322,11 +2399,11 @@ such as a button.</p>
         </li>
         
         
-        <li id="section-70">
+        <li id="section-76">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-70">&#x00a7;</a>
+                <a class="ss" href="#section-76">&#x00a7;</a>
               </div>
               <p>helper for mu_begin_window to create a root container.</p>
 
@@ -2340,11 +2417,11 @@ such as a button.</p>
         </li>
         
         
-        <li id="section-71">
+        <li id="section-77">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-71">&#x00a7;</a>
+                <a class="ss" href="#section-77">&#x00a7;</a>
               </div>
               <p>TODO: what is jump?</p>
 
@@ -2368,21 +2445,33 @@ such as a button.</p>
         </li>
         
         
-        <li id="section-72">
+        <li id="section-78">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-72">&#x00a7;</a>
+                <a class="ss" href="#section-78">&#x00a7;</a>
               </div>
               <p>this resets the clip stack. <code>mu_push_clip_rect</code> pushes a sequence of clips..</p>
 
             </div>
             
             <div class="content"><div class='highlight'><pre>  push(ctx-&gt;clip_stack, unclipped_rect);
-}
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-79">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-79">&#x00a7;</a>
+              </div>
+              <p>TODO: figure out the exact invariants</p>
 
-
-<span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">end_root_container</span><span class="hljs-params">(mu_Context *ctx)</span> </span>{
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">end_root_container</span><span class="hljs-params">(mu_Context *ctx)</span> </span>{
   <span class="hljs-comment">/* push tail &#x27;goto&#x27; jump command and set head &#x27;skip&#x27; command. the final steps
   ** on initing these are done in mu_end() */</span>
   mu_Container *cnt = mu_get_current_container(ctx);
@@ -2421,11 +2510,11 @@ such as a button.</p>
         </li>
         
         
-        <li id="section-73">
+        <li id="section-80">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-73">&#x00a7;</a>
+                <a class="ss" href="#section-80">&#x00a7;</a>
               </div>
               <p>What is a panel, versus a window, versus a container?</p>
 

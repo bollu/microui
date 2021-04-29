@@ -190,8 +190,8 @@ struct mu_Context {
   mu_Container *hover_root; // ?
   mu_Container *next_hover_root; // ?
   mu_Container *scroll_target; // ?
-  char number_edit_buf[MU_MAX_FMT]; // ?
-  mu_Id number_edit; // ?
+  char number_edit_buf[MU_MAX_FMT]; // buffer for entering number as text.
+  mu_Id number_edit; // item where number is being entered as text.
   /* stacks */
   mu_stack(char, MU_COMMANDLIST_SIZE) command_list; // list of draw commands to be interpreted by the client.
   mu_stack(mu_Container*, MU_ROOTLIST_SIZE) root_list; // ?

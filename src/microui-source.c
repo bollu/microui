@@ -213,12 +213,12 @@ mu_Id mu_get_id(mu_Context *ctx, const void *data, int size) {
   return res;
 }
 
-
+// create a new ID.
 void mu_push_id(mu_Context *ctx, const void *data, int size) {
   push(ctx->id_stack, mu_get_id(ctx, data, size));
 }
 
-
+// pop the last ID that was pushed.
 void mu_pop_id(mu_Context *ctx) {
   pop(ctx->id_stack);
 }
@@ -1112,6 +1112,9 @@ void mu_draw_control_text(mu_Context *ctx, const char *str, mu_Rect rect,
 }
 
 
+// check that mouse is where we are, and that we are being drawn,
+// and that we are being hovered on (TODO: I guess the last check is to make sure
+// there is nothing above us, z-index wise?)
 int mu_mouse_over(mu_Context *ctx, mu_Rect rect) {
   return rect_overlaps_vec2(rect, ctx->mouse_pos) &&
     rect_overlaps_vec2(mu_get_clip_rect(ctx), ctx->mouse_pos) &&
@@ -1219,6 +1222,8 @@ int mu_checkbox(mu_Context *ctx, const char *label, int *state) {
 }
 
 
+// draw a textbox with the text from buf, and also merge data from ctx->input_text, and
+// then handle key presses such ash backspace and ENTER.
 int mu_textbox_raw(mu_Context *ctx, char *buf, int bufsz, mu_Id id, mu_Rect r,
   int opt)
 {
@@ -1238,6 +1243,7 @@ int mu_textbox_raw(mu_Context *ctx, char *buf, int bufsz, mu_Id id, mu_Rect r,
     /* handle backspace */
     if (ctx->key_pressed & MU_KEY_BACKSPACE && len > 0) {
       /* skip utf-8 continuation bytes */
+      // TODO: what is a continuation byte?
       while ((buf[--len] & 0xc0) == 0x80 && len > 0);
       buf[len] = '\0';
       res |= MU_RES_CHANGE;
@@ -1270,7 +1276,7 @@ int mu_textbox_raw(mu_Context *ctx, char *buf, int bufsz, mu_Id id, mu_Rect r,
   return res;
 }
 
-
+// draw textbox which holds numbers.
 static int number_textbox(mu_Context *ctx, mu_Real *value, mu_Rect r, mu_Id id) {
   if (ctx->mouse_pressed == MU_MOUSE_LEFT && ctx->key_down & MU_KEY_SHIFT &&
       ctx->hover == id
@@ -1524,7 +1530,7 @@ static void mu_begin_window_ex_begin_root_container(mu_Context *ctx, mu_Containe
   push(ctx->clip_stack, unclipped_rect);
 }
 
-
+// TODO: figure out the exact invariants
 static void end_root_container(mu_Context *ctx) {
   /* push tail 'goto' jump command and set head 'skip' command. the final steps
   ** on initing these are done in mu_end() */
