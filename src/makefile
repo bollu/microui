@@ -13,7 +13,7 @@
 all: renderer.out docs
 
 docs:
-	docco microui-header.h microui-source.c
+	docco microui-header.h microui-source.c -o ../docs
 
 
 renderer.out: *.c  *.h
