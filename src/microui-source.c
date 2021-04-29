@@ -623,7 +623,7 @@ static void draw_frame(mu_Context *ctx, mu_Rect rect, int colorid) {
       colorid == MU_COLOR_TITLEBG) { return; }
   /* draw border */
   if (ctx->style->colors[MU_COLOR_BORDER].a) {
-    mu_draw_box(ctx, expand_rect(rect, 1), ctx->style->colors[MU_COLOR_BORDER]);
+    mu_draw_border_box(ctx, expand_rect(rect, 1), ctx->style->colors[MU_COLOR_BORDER]);
   }
 }
 
@@ -877,13 +877,14 @@ static mu_Command* push_jump(mu_Context *ctx, mu_Command *dst) {
 }
 
 
+// queue a clipping command.
 void mu_draw_clip(mu_Context *ctx, mu_Rect rect) {
   mu_Command *cmd;
   cmd = mu_push_command(ctx, MU_COMMAND_CLIP, sizeof(mu_ClipCommand));
   cmd->clip.rect = rect;
 }
 
-// queue the command to draw a rectangle.
+// queue a draw rectangle command.
 void mu_draw_rect(mu_Context *ctx, mu_Rect rect, mu_Color color) {
   mu_Command *cmd;
   rect = intersect_rects(rect, mu_get_clip_rect(ctx));
@@ -894,10 +895,9 @@ void mu_draw_rect(mu_Context *ctx, mu_Rect rect, mu_Color color) {
   }
 }
 
-// # Box
-// Draw a box around the rectangle.
 
-void mu_draw_box(mu_Context *ctx, mu_Rect rect, mu_Color color) {
+// Draw a box of 1px width around the rectangle.
+void mu_draw_border_box(mu_Context *ctx, mu_Rect rect, mu_Color color) {
   mu_draw_rect(ctx, mu_rect(rect.x + 1, rect.y, rect.w - 2, 1), color);
   mu_draw_rect(ctx, mu_rect(rect.x + 1, rect.y + rect.h - 1, rect.w - 2, 1), color);
   mu_draw_rect(ctx, mu_rect(rect.x, rect.y, 1, rect.h), color);
