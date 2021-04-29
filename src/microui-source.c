@@ -62,11 +62,16 @@
 static void draw_frame(mu_Context *ctx, mu_Rect rect, int colorid);
 static mu_Style default_style;
 
-void mu_init(mu_Context *ctx) {
+void mu_init(mu_Context *ctx,
+             int (*text_width)(mu_Font font, const char *str, int len),
+             int (*text_height)(mu_Font font)) {
   memset(ctx, 0, sizeof(*ctx));
-  ctx->draw_frame = draw_frame;
+  ctx->draw_frame = draw_frame; // why is this flexibility necessary?
+  
   ctx->_style = default_style;
   ctx->style = &ctx->_style;
+  ctx->text_width = text_width;
+  ctx->text_height = text_height;
 }
 
 // The default style is encoded in a struct which represents TODO
@@ -103,7 +108,8 @@ static mu_Style default_style = {
 //   2. call `mu_begin()`
 //   3. process ui
 //   4. call `mu_end()`
-//   5. iterate commands using `mu_command_next()`
+//   5. iterate commands/callbacks/events with
+//        `mu_command_next()`
 // ```
 // 
 // 
@@ -135,6 +141,9 @@ void mu_input_mousedown(mu_Context *ctx, int x, int y, int btn) {
 void mu_input_mouseup(mu_Context *ctx, int x, int y, int btn) {
   mu_input_mousemove(ctx, x, y);
   ctx->mouse_down &= ~btn;
+  // NOTE: vvv this code is NOT present, so mouse_pressed tracks a different state than mouse_down.
+  // ctx->mouse_pressed &= ~btn;
+
 }
 
 
@@ -152,6 +161,8 @@ void mu_input_keydown(mu_Context *ctx, int key) {
 
 void mu_input_keyup(mu_Context *ctx, int key) {
   ctx->key_down &= ~key;
+  // NOTE: vvv this code is NOT present, so key_pressed tracks a different state.
+  // ctx->key_pressed &= ~key;
 }
 
 
@@ -162,15 +173,67 @@ void mu_input_text(mu_Context *ctx, const char *text) {
   memcpy(ctx->input_text + len, text, size);
 }
 
-// ## 2. Call `mu_begin`
+// #### Macros for push & pop
+// These macros are used to push and pop into a C stack data structure.
 
-// After handling the input the `mu_begin()` function must be called before
+#define push(stk, val) do {                                                 \
+    expect((stk).idx < (int) (sizeof((stk).items) / sizeof(*(stk).items))); \
+    (stk).items[(stk).idx] = (val);                                         \
+    (stk).idx++; /* incremented after incase `val` uses this value */       \
+  } while (0)
+
+#define pop(stk) do {      \
+    expect((stk).idx > 0); \
+    (stk).idx--;           \
+  } while (0)
+
+
+
+
+// #### Metadata: ID management
+
+/* 32bit fnv-1a hash */
+#define HASH_INITIAL 2166136261
+
+// Implementation of the [Fowler-Noll-Vo](https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function) hash
+// function.
+
+static void hash(mu_Id *hash, const void *data, int size) {
+  const unsigned char *p = data;
+  while (size--) {
+    *hash = (*hash ^ *p++) * 16777619;
+  }
+}
+
+mu_Id mu_get_id(mu_Context *ctx, const void *data, int size) {
+  int idx = ctx->id_stack.idx; // size of stack.
+  mu_Id res = (idx > 0) ? ctx->id_stack.items[idx - 1] : HASH_INITIAL;
+  hash(&res, data, size);
+  ctx->last_id = res;
+  return res;
+}
+
+
+void mu_push_id(mu_Context *ctx, const void *data, int size) {
+  push(ctx->id_stack, mu_get_id(ctx, data, size));
+}
+
+
+void mu_pop_id(mu_Context *ctx) {
+  pop(ctx->id_stack);
+}
+
+
+// ## 2. Call `mu_finalize_events_begin_draw`
+
+// After handling the input the `mu_finalize_events_begin_draw()` function must be called before
 // processing your UI:
 // ```c
-// mu_begin(ctx);
+// mu_finalize_events_begin_draw(ctx);
 // ```
 
-void mu_begin(mu_Context *ctx) {
+void mu_finalize_events_begin_draw(mu_Context *ctx) {
+  // check that text_width and text_height are initialized.
   expect(ctx->text_width && ctx->text_height);
   ctx->command_list.idx = 0;
   ctx->root_list.idx = 0;
@@ -184,7 +247,6 @@ void mu_begin(mu_Context *ctx) {
 
 
 
-//
 // Before any controls can be used we must begin a window using one of the
 // `mu_begin_window...` or `mu_begin_popup...` functions. The `mu_begin_...` window
 // functions return a truthy value if the window is open, if this is not the case
@@ -192,7 +254,8 @@ void mu_begin(mu_Context *ctx) {
 // the window's ui the `mu_end_...` window function should be called.
 // 
 // ```c
-// if (mu_begin_window(ctx, "My Window", mu_rect(10, 10, 300, 400))) {
+// if (mu_begin_window(ctx, "My Window", 
+//       mu_rect(10, 10, 300, 400))) {
 //   /* process ui here... */
 //   mu_end_window(ctx);
 // }
@@ -201,7 +264,108 @@ void mu_begin(mu_Context *ctx) {
 // It is safe to nest `mu_begin_window()` calls, this can be useful for things like
 // context menus; the windows will still render separate from one another like
 // normal.
-// 
+
+static mu_Container* get_container(mu_Context *ctx, mu_Id id, int opt);
+static void mu_begin_window_ex_begin_root_container(mu_Context *ctx, mu_Container *cnt);
+static void push_container_body(  mu_Context *ctx, mu_Container *cnt, mu_Rect body, int opt);
+static mu_Layout* get_layout(mu_Context *ctx);
+
+
+
+int mu_begin_window_ex(mu_Context *ctx, const char *title, mu_Rect rect, int opt) {
+  mu_Rect body;
+  // hash object based on title.
+  mu_Id id = mu_get_id(ctx, title, strlen(title));
+  // find the container for this, and raise it to the front.
+  mu_Container *cnt = get_container(ctx, id, opt);
+  // if we can't find a container, or it is closed, give up.
+  if (!cnt || !cnt->open) { return 0; }
+  // push the container ID onto the stack. (TODO: why?)
+  push(ctx->id_stack, id);
+  // if container is new(?), set its rect. (TODO: WHY?)
+  if (cnt->rect.w == 0) { cnt->rect = rect; }
+
+  mu_begin_window_ex_begin_root_container(ctx, cnt);
+  rect = body = cnt->rect;
+
+  /* draw frame */
+  // if opt does NOT have MU_OPT_NOFRAME set:
+  if (~opt & MU_OPT_NOFRAME) {
+ctx->draw_frame(ctx, rect, MU_COLOR_WINDOWBG);
+  }
+
+  /* do title bar */
+  if (~opt & MU_OPT_NOTITLE) {
+    mu_Rect tr = rect;
+    tr.h = ctx->style->title_height;
+    ctx->draw_frame(ctx, tr, MU_COLOR_TITLEBG);
+
+    /* do title text */
+    if (~opt & MU_OPT_NOTITLE) {
+      mu_Id id = mu_get_id(ctx, "!title", 6);
+      mu_update_control(ctx, id, tr, opt);
+      mu_draw_control_text(ctx, title, tr, MU_COLOR_TITLETEXT, opt);
+      if (id == ctx->focus && ctx->mouse_down == MU_MOUSE_LEFT) {
+        cnt->rect.x += ctx->mouse_delta.x;
+        cnt->rect.y += ctx->mouse_delta.y;
+      }
+      body.y += tr.h;
+      body.h -= tr.h;
+    }
+
+    /* do `close` button */
+    if (~opt & MU_OPT_NOCLOSE) {
+      mu_Id id = mu_get_id(ctx, "!close", 6);
+      mu_Rect r = mu_rect(tr.x + tr.w - tr.h, tr.y, tr.h, tr.h);
+      tr.w -= r.w;
+      mu_draw_icon(ctx, MU_ICON_CLOSE, r, ctx->style->colors[MU_COLOR_TITLETEXT]);
+      mu_update_control(ctx, id, r, opt);
+      if (ctx->mouse_pressed == MU_MOUSE_LEFT && id == ctx->focus) {
+        cnt->open = 0;
+      }
+    }
+  }
+
+  push_container_body(ctx, cnt, body, opt);
+
+  /* do `resize` handle */
+  if (~opt & MU_OPT_NORESIZE) {
+    int sz = ctx->style->title_height;
+    mu_Id id = mu_get_id(ctx, "!resize", 7);
+    mu_Rect r = mu_rect(rect.x + rect.w - sz, rect.y + rect.h - sz, sz, sz);
+    mu_update_control(ctx, id, r, opt);
+    if (id == ctx->focus && ctx->mouse_down == MU_MOUSE_LEFT) {
+      cnt->rect.w = mu_max(96, cnt->rect.w + ctx->mouse_delta.x);
+      cnt->rect.h = mu_max(64, cnt->rect.h + ctx->mouse_delta.y);
+    }
+  }
+
+  /* resize to content size */
+  if (opt & MU_OPT_AUTOSIZE) {
+    mu_Rect r = get_layout(ctx)->body;
+    cnt->rect.w = cnt->content_size.x + (cnt->rect.w - r.w);
+    cnt->rect.h = cnt->content_size.y + (cnt->rect.h - r.h);
+  }
+
+  /* close if this is a popup window and elsewhere was clicked */
+  if (opt & MU_OPT_POPUP && ctx->mouse_pressed && ctx->hover_root != cnt) {
+    cnt->open = 0;
+  }
+
+  mu_push_clip_rect(ctx, cnt->body);
+  return MU_RES_ACTIVE;
+}
+
+
+static void end_root_container(mu_Context *ctx);
+void mu_pop_clip_rect(mu_Context *ctx);
+
+void mu_end_window(mu_Context *ctx) {
+  mu_pop_clip_rect(ctx);
+  end_root_container(ctx);
+}
+
+
 // While inside a window block we can safely process controls. Controls that allow
 // user interaction return a bitset of `MU_RES_...` values. Some controls — such
 // as buttons — can only potentially return a single `MU_RES_...`, thus their
@@ -255,8 +419,6 @@ void mu_begin(mu_Context *ctx) {
 //   }
 // }
 // ```
-// 
-// See the [`demo`](../demo) directory for a usage example.
 // 
 // 
 // ## Layout System
@@ -322,7 +484,9 @@ void mu_begin(mu_Context *ctx) {
 // mu_Rect rect = mu_layout_next(ctx);
 // mu_layout_set_next(ctx, rect, 0);
 // ```
-// 
+
+
+
 // If you want to position controls arbitrarily inside a container the
 // `relative` argument of `mu_layout_set_next()` should be true:
 // ```c
@@ -397,21 +561,6 @@ void mu_begin(mu_Context *ctx) {
 #define unused(x) ((void) (x))
 
 
-// # Macros for pushing and popping
-// These macros are used to push and pop repeated values.
-
-#define push(stk, val) do {                                                 \
-    expect((stk).idx < (int) (sizeof((stk).items) / sizeof(*(stk).items))); \
-    (stk).items[(stk).idx] = (val);                                         \
-    (stk).idx++; /* incremented after incase `val` uses this value */       \
-  } while (0)
-
-#define pop(stk) do {      \
-    expect((stk).idx > 0); \
-    (stk).idx--;           \
-  } while (0)
-
-
 static mu_Rect unclipped_rect = { 0, 0, 0x1000000, 0x1000000 };
 
 
@@ -442,7 +591,6 @@ mu_Color mu_color(int r, int g, int b, int a) {
 // # Expand
 // expands a rectangle by `n` in all directions
 
-
 static mu_Rect expand_rect(mu_Rect rect, int n) {
   return mu_rect(rect.x - n, rect.y - n, rect.w + n * 2, rect.h + n * 2);
 }
@@ -461,11 +609,7 @@ static mu_Rect intersect_rects(mu_Rect r1, mu_Rect r2) {
 }
 
 // Overlap
-// 
-
 // Check if vector lies in rectangle
-
-
 static int rect_overlaps_vec2(mu_Rect r, mu_Vec2 p) {
   return p.x >= r.x && p.x < r.x + r.w && p.y >= r.y && p.y < r.y + r.h;
 }
@@ -486,16 +630,10 @@ static void draw_frame(mu_Context *ctx, mu_Rect rect, int colorid) {
   }
 }
 
-// Init
-// Initialize the library.
-
-
-
 
 
 // Compare Z index
-// Retuurn difference of Z indeces between `a` and `b`.
-
+// Retuurn difference of Z indeces between containers `a` and `b`.
 static int compare_zindex(const void *a, const void *b) {
   return (*(mu_Container**) a)->zindex - (*(mu_Container**) b)->zindex;
 }
@@ -571,35 +709,6 @@ void mu_set_focus(mu_Context *ctx, mu_Id id) {
 }
 
 
-/* 32bit fnv-1a hash */
-#define HASH_INITIAL 2166136261
-
-static void hash(mu_Id *hash, const void *data, int size) {
-  const unsigned char *p = data;
-  while (size--) {
-    *hash = (*hash ^ *p++) * 16777619;
-  }
-}
-
-
-mu_Id mu_get_id(mu_Context *ctx, const void *data, int size) {
-  int idx = ctx->id_stack.idx;
-  mu_Id res = (idx > 0) ? ctx->id_stack.items[idx - 1] : HASH_INITIAL;
-  hash(&res, data, size);
-  ctx->last_id = res;
-  return res;
-}
-
-
-void mu_push_id(mu_Context *ctx, const void *data, int size) {
-  push(ctx->id_stack, mu_get_id(ctx, data, size));
-}
-
-
-void mu_pop_id(mu_Context *ctx) {
-  pop(ctx->id_stack);
-}
-
 
 void mu_push_clip_rect(mu_Context *ctx, mu_Rect rect) {
   mu_Rect last = mu_get_clip_rect(ctx);
@@ -639,6 +748,7 @@ static void push_layout(mu_Context *ctx, mu_Rect body, mu_Vec2 scroll) {
 }
 
 
+// return top of layout stack
 static mu_Layout* get_layout(mu_Context *ctx) {
   return &ctx->layout_stack.items[ctx->layout_stack.idx - 1];
 }
@@ -667,6 +777,7 @@ static mu_Container* get_container(mu_Context *ctx, mu_Id id, int opt) {
   /* try to get existing container from pool */
   int idx = mu_pool_get(ctx, ctx->container_pool, MU_CONTAINERPOOL_SIZE, id);
   if (idx >= 0) {
+    // TODO: why is this || ?
     if (ctx->containers[idx].open || ~opt & MU_OPT_CLOSED) {
       mu_pool_update(ctx, ctx->container_pool, idx);
     }
@@ -678,6 +789,7 @@ static mu_Container* get_container(mu_Context *ctx, mu_Id id, int opt) {
   cnt = &ctx->containers[idx];
   memset(cnt, 0, sizeof(*cnt));
   cnt->open = 1;
+  // bring container to front by increasing z-index.
   mu_bring_to_front(ctx, cnt);
   return cnt;
 }
@@ -698,12 +810,14 @@ void mu_bring_to_front(mu_Context *ctx, mu_Container *cnt) {
 ** pool
 **============================================================================*/
 
+
 int mu_pool_init(mu_Context *ctx, mu_PoolItem *items, int len, mu_Id id) {
-  int i, n = -1, f = ctx->frame;
-  for (i = 0; i < len; i++) {
+  int n = -1, f = ctx->frame;
+  for (int i = 0; i < len; i++) {
+    // find *rightmost* old slot and reuse it.
+    // TODO: why *rightmost*? 
     if (items[i].last_update < f) {
-      f = items[i].last_update;
-      n = i;
+      f = items[i].last_update; n = i;
     }
   }
   expect(n > -1);
@@ -746,7 +860,7 @@ mu_Command* mu_push_command(mu_Context *ctx, int type, int size) {
 
 int mu_next_command(mu_Context *ctx, mu_Command **cmd) {
   if (*cmd) {
-    *cmd = (mu_Command*) (((char*) *cmd) + (*cmd)->base.size);
+    *cmd = (mu_Command*) (((char*) *cmd) + (*cmd)->base.size); // WTF?
   } else {
     *cmd = (mu_Command*) ctx->command_list.items;
   }
@@ -836,6 +950,9 @@ void mu_draw_icon(mu_Context *ctx, int id, mu_Rect rect, mu_Color color) {
 ** layout
 **============================================================================*/
 
+// Should we have begin/end for row as well as column?
+
+
 enum { RELATIVE = 1, ABSOLUTE = 2 };
 
 
@@ -846,10 +963,13 @@ void mu_layout_begin_column(mu_Context *ctx) {
 
 void mu_layout_end_column(mu_Context *ctx) {
   mu_Layout *a, *b;
+  // top of layout stack; the column we had begun
   b = get_layout(ctx);
   pop(ctx->layout_stack);
   /* inherit position/next_row/max from child layout if they are greater */
   a = get_layout(ctx);
+  // TODO: think about these computations.
+  // The idea is to reflow the parent of the column, based on the column data.
   a->position.x = mu_max(a->position.x, b->position.x + b->body.x - a->body.x);
   a->next_row = mu_max(a->next_row, b->next_row + b->body.y - a->body.y);
   a->max.x = mu_max(a->max.x, b->max.x);
@@ -857,6 +977,7 @@ void mu_layout_end_column(mu_Context *ctx) {
 }
 
 
+// create a new layout row.
 void mu_layout_row(mu_Context *ctx, int items, const int *widths, int height) {
   mu_Layout *layout = get_layout(ctx);
   if (widths) {
@@ -870,11 +991,12 @@ void mu_layout_row(mu_Context *ctx, int items, const int *widths, int height) {
 }
 
 
+// set layout width.
 void mu_layout_width(mu_Context *ctx, int width) {
   get_layout(ctx)->size.x = width;
 }
 
-
+// set layout height.
 void mu_layout_height(mu_Context *ctx, int height) {
   get_layout(ctx)->size.y = height;
 }
@@ -887,33 +1009,38 @@ void mu_layout_set_next(mu_Context *ctx, mu_Rect r, int relative) {
 }
 
 
+// key function that performs layouting!
 mu_Rect mu_layout_next(mu_Context *ctx) {
   mu_Layout *layout = get_layout(ctx);
   mu_Style *style = ctx->style;
   mu_Rect res;
 
+  // no idea what it means for next_type to be unset!
   if (layout->next_type) {
     /* handle rect set by `mu_layout_set_next` */
     int type = layout->next_type;
     layout->next_type = 0;
     res = layout->next;
+    // TODO: we don't increment item_index?
     if (type == ABSOLUTE) { return (ctx->last_rect = res); }
-
   } else {
+
     /* handle next row */
     if (layout->item_index == layout->items) {
       mu_layout_row(ctx, layout->items, NULL, layout->size.y);
     }
 
-    /* position */
+    // position
     res.x = layout->position.x;
     res.y = layout->position.y;
 
-    /* size */
+    // size 
     res.w = layout->items > 0 ? layout->widths[layout->item_index] : layout->size.x;
     res.h = layout->size.y;
+    // if zero, then auto-size??
     if (res.w == 0) { res.w = style->size.x + style->padding * 2; }
     if (res.h == 0) { res.h = style->size.y + style->padding * 2; }
+    // negative width, height is interpreted as: leave this much room from the border.
     if (res.w <  0) { res.w += layout->body.w - res.x + 1; }
     if (res.h <  0) { res.h += layout->body.h - res.y + 1; }
 
@@ -952,6 +1079,8 @@ static int in_hover_root(mu_Context *ctx) {
 }
 
 
+// draw a frame which colors based on focus/hover. Hence, a "control frame",
+// such as a button.
 void mu_draw_control_frame(mu_Context *ctx, mu_Id id, mu_Rect rect,
   int colorid, int opt)
 {
@@ -988,6 +1117,13 @@ int mu_mouse_over(mu_Context *ctx, mu_Rect rect) {
 }
 
 
+// update the state of the context relative to the object `id`, which inhabits location
+// `rect`. this updates:
+// - ctx->updated_focus: whether focus was updated.
+// - ctx->hover: whether this element is being hovered on.
+// - mu_set_focus(): if this element should be focused, which sets:
+// - ctx->focus: the ID of the item being focused.
+// - ctx->updated_focus: whether focus has been updated.
 void mu_update_control(mu_Context *ctx, mu_Id id, mu_Rect rect, int opt) {
   int mouseover = mu_mouse_over(ctx, rect);
 
@@ -1049,7 +1185,7 @@ int mu_button_ex(mu_Context *ctx, const char *label, int icon, int opt) {
   mu_update_control(ctx, id, r, opt);
   /* handle click */
   if (ctx->mouse_pressed == MU_MOUSE_LEFT && ctx->focus == id) {
-    res |= MU_RES_SUBMIT;
+    res |= MU_RES_SUBMIT; // submit a text box if attached.
   }
   /* draw */
   mu_draw_control_frame(ctx, id, r, MU_COLOR_BUTTON, opt);
@@ -1361,9 +1497,12 @@ static void push_container_body(
 }
 
 
-static void begin_root_container(mu_Context *ctx, mu_Container *cnt) {
+// helper for mu_begin_window to create a root container.
+static void mu_begin_window_ex_begin_root_container(mu_Context *ctx, mu_Container *cnt) {
+  /* push container into stack of containers */
   push(ctx->container_stack, cnt);
   /* push container to roots list and push head command */
+  // TODO: what is jump?
   push(ctx->root_list, cnt);
   cnt->head = push_jump(ctx, NULL);
   /* set as hover root if the mouse is overlapping this container and it has a
@@ -1375,7 +1514,9 @@ static void begin_root_container(mu_Context *ctx, mu_Container *cnt) {
   }
   /* clipping is reset here in case a root-container is made within
   ** another root-containers's begin/end block; this prevents the inner
-  ** root-container being clipped to the outer */
+  ** root-container being clipped to the outer.
+  ** TODO: why would someone create a root container inside another root container?
+  */
   push(ctx->clip_stack, unclipped_rect);
 }
 
@@ -1392,89 +1533,6 @@ static void end_root_container(mu_Context *ctx) {
 }
 
 
-int mu_begin_window_ex(mu_Context *ctx, const char *title, mu_Rect rect, int opt) {
-  mu_Rect body;
-  mu_Id id = mu_get_id(ctx, title, strlen(title));
-  mu_Container *cnt = get_container(ctx, id, opt);
-  if (!cnt || !cnt->open) { return 0; }
-  push(ctx->id_stack, id);
-
-  if (cnt->rect.w == 0) { cnt->rect = rect; }
-  begin_root_container(ctx, cnt);
-  rect = body = cnt->rect;
-
-  /* draw frame */
-  if (~opt & MU_OPT_NOFRAME) {
-    ctx->draw_frame(ctx, rect, MU_COLOR_WINDOWBG);
-  }
-
-  /* do title bar */
-  if (~opt & MU_OPT_NOTITLE) {
-    mu_Rect tr = rect;
-    tr.h = ctx->style->title_height;
-    ctx->draw_frame(ctx, tr, MU_COLOR_TITLEBG);
-
-    /* do title text */
-    if (~opt & MU_OPT_NOTITLE) {
-      mu_Id id = mu_get_id(ctx, "!title", 6);
-      mu_update_control(ctx, id, tr, opt);
-      mu_draw_control_text(ctx, title, tr, MU_COLOR_TITLETEXT, opt);
-      if (id == ctx->focus && ctx->mouse_down == MU_MOUSE_LEFT) {
-        cnt->rect.x += ctx->mouse_delta.x;
-        cnt->rect.y += ctx->mouse_delta.y;
-      }
-      body.y += tr.h;
-      body.h -= tr.h;
-    }
-
-    /* do `close` button */
-    if (~opt & MU_OPT_NOCLOSE) {
-      mu_Id id = mu_get_id(ctx, "!close", 6);
-      mu_Rect r = mu_rect(tr.x + tr.w - tr.h, tr.y, tr.h, tr.h);
-      tr.w -= r.w;
-      mu_draw_icon(ctx, MU_ICON_CLOSE, r, ctx->style->colors[MU_COLOR_TITLETEXT]);
-      mu_update_control(ctx, id, r, opt);
-      if (ctx->mouse_pressed == MU_MOUSE_LEFT && id == ctx->focus) {
-        cnt->open = 0;
-      }
-    }
-  }
-
-  push_container_body(ctx, cnt, body, opt);
-
-  /* do `resize` handle */
-  if (~opt & MU_OPT_NORESIZE) {
-    int sz = ctx->style->title_height;
-    mu_Id id = mu_get_id(ctx, "!resize", 7);
-    mu_Rect r = mu_rect(rect.x + rect.w - sz, rect.y + rect.h - sz, sz, sz);
-    mu_update_control(ctx, id, r, opt);
-    if (id == ctx->focus && ctx->mouse_down == MU_MOUSE_LEFT) {
-      cnt->rect.w = mu_max(96, cnt->rect.w + ctx->mouse_delta.x);
-      cnt->rect.h = mu_max(64, cnt->rect.h + ctx->mouse_delta.y);
-    }
-  }
-
-  /* resize to content size */
-  if (opt & MU_OPT_AUTOSIZE) {
-    mu_Rect r = get_layout(ctx)->body;
-    cnt->rect.w = cnt->content_size.x + (cnt->rect.w - r.w);
-    cnt->rect.h = cnt->content_size.y + (cnt->rect.h - r.h);
-  }
-
-  /* close if this is a popup window and elsewhere was clicked */
-  if (opt & MU_OPT_POPUP && ctx->mouse_pressed && ctx->hover_root != cnt) {
-    cnt->open = 0;
-  }
-
-  mu_push_clip_rect(ctx, cnt->body);
-  return MU_RES_ACTIVE;
-}
-
-
-void mu_end_window(mu_Context *ctx) {
-  mu_pop_clip_rect(ctx);
-  end_root_container(ctx);
-}
 
 
 void mu_open_popup(mu_Context *ctx, const char *name) {

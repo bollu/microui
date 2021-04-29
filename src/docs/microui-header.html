@@ -171,12 +171,12 @@
 <span class="hljs-keyword">typedef</span> <span class="hljs-keyword">struct</span> { <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">char</span> r, g, b, a; } mu_Color;
 <span class="hljs-keyword">typedef</span> <span class="hljs-keyword">struct</span> { mu_Id <span class="hljs-keyword">id</span>; <span class="hljs-keyword">int</span> last_update; } mu_PoolItem;
 
-<span class="hljs-keyword">typedef</span> <span class="hljs-keyword">struct</span> { <span class="hljs-keyword">int</span> type, size; } mu_BaseCommand;
-<span class="hljs-keyword">typedef</span> <span class="hljs-keyword">struct</span> { mu_BaseCommand base; <span class="hljs-keyword">void</span> *dst; } mu_JumpCommand;
-<span class="hljs-keyword">typedef</span> <span class="hljs-keyword">struct</span> { mu_BaseCommand base; mu_Rect rect; } mu_ClipCommand;
-<span class="hljs-keyword">typedef</span> <span class="hljs-keyword">struct</span> { mu_BaseCommand base; mu_Rect rect; mu_Color color; } mu_RectCommand;
-<span class="hljs-keyword">typedef</span> <span class="hljs-keyword">struct</span> { mu_BaseCommand base; mu_Font font; mu_Vec2 pos; mu_Color color; <span class="hljs-keyword">char</span> str[<span class="hljs-number">1</span>]; } mu_TextCommand;
-<span class="hljs-keyword">typedef</span> <span class="hljs-keyword">struct</span> { mu_BaseCommand base; mu_Rect rect; <span class="hljs-keyword">int</span> <span class="hljs-keyword">id</span>; mu_Color color; } mu_IconCommand;
+<span class="hljs-keyword">typedef</span> <span class="hljs-keyword">struct</span> { <span class="hljs-keyword">int</span> type, size; } mu_BaseCommand; <span class="hljs-comment">// what is size?</span>
+<span class="hljs-keyword">typedef</span> <span class="hljs-keyword">struct</span> { mu_BaseCommand base; <span class="hljs-keyword">void</span> *dst; } mu_JumpCommand; <span class="hljs-comment">// what is jump?</span>
+<span class="hljs-keyword">typedef</span> <span class="hljs-keyword">struct</span> { mu_BaseCommand base; mu_Rect rect; } mu_ClipCommand; <span class="hljs-comment">// set clipping rectangle.</span>
+<span class="hljs-keyword">typedef</span> <span class="hljs-keyword">struct</span> { mu_BaseCommand base; mu_Rect rect; mu_Color color; } mu_RectCommand; <span class="hljs-comment">// draw a rectangle.</span>
+<span class="hljs-keyword">typedef</span> <span class="hljs-keyword">struct</span> { mu_BaseCommand base; mu_Font font; mu_Vec2 pos; mu_Color color; <span class="hljs-keyword">char</span> str[<span class="hljs-number">1</span>]; } mu_TextCommand; <span class="hljs-comment">// draw text</span>
+<span class="hljs-keyword">typedef</span> <span class="hljs-keyword">struct</span> { mu_BaseCommand base; mu_Rect rect; <span class="hljs-keyword">int</span> <span class="hljs-keyword">id</span>; mu_Color color; } mu_IconCommand; <span class="hljs-comment">// draw icon.</span>
 
 <span class="hljs-keyword">typedef</span> <span class="hljs-keyword">union</span> {
   <span class="hljs-keyword">int</span> type;
@@ -189,38 +189,38 @@
 } mu_Command;
 
 <span class="hljs-keyword">typedef</span> <span class="hljs-keyword">struct</span> {
-  mu_Rect body;
-  mu_Rect next;
-  mu_Vec2 position;
-  mu_Vec2 size;
-  mu_Vec2 max;
-  <span class="hljs-keyword">int</span> widths[MU_MAX_WIDTHS];
-  <span class="hljs-keyword">int</span> items;
-  <span class="hljs-keyword">int</span> item_index;
-  <span class="hljs-keyword">int</span> next_row;
-  <span class="hljs-keyword">int</span> next_type;
-  <span class="hljs-keyword">int</span> indent;
+  mu_Rect body; <span class="hljs-comment">// ?</span>
+  mu_Rect next; <span class="hljs-comment">// ?</span>
+  mu_Vec2 position; <span class="hljs-comment">// the poisition of the item to be returned by a call to [mu_layout_next]</span>
+  mu_Vec2 size; <span class="hljs-comment">// ?</span>
+  mu_Vec2 max; <span class="hljs-comment">// ?</span>
+  <span class="hljs-keyword">int</span> widths[MU_MAX_WIDTHS]; <span class="hljs-comment">// widths of each item in the layout.</span>
+  <span class="hljs-keyword">int</span> items; <span class="hljs-comment">// number of items in the layout</span>
+  <span class="hljs-keyword">int</span> item_index; <span class="hljs-comment">// the index of the item to be returned by a call to [mu_layout_next].</span>
+  <span class="hljs-keyword">int</span> next_row; <span class="hljs-comment">// the `y` coordinate of the next row.</span>
+  <span class="hljs-keyword">int</span> next_type; <span class="hljs-comment">// is RELATIVE or ABSOLUTE or 0</span>
+  <span class="hljs-keyword">int</span> indent; <span class="hljs-comment">// ?</span>
 } mu_Layout;
 
 <span class="hljs-keyword">typedef</span> <span class="hljs-keyword">struct</span> {
-  mu_Command *head, *tail;
-  mu_Rect rect;
+  mu_Command *head, *tail; <span class="hljs-comment">// command vector.</span>
+  mu_Rect rect; <span class="hljs-comment">// what is rect v/s body?</span>
   mu_Rect body;
-  mu_Vec2 content_size;
-  mu_Vec2 scroll;
-  <span class="hljs-keyword">int</span> zindex;
-  <span class="hljs-keyword">int</span> open;
+  mu_Vec2 content_size; <span class="hljs-comment">// what is content_size?</span>
+  mu_Vec2 scroll; <span class="hljs-comment">// scroll of the container?</span>
+  <span class="hljs-keyword">int</span> zindex; <span class="hljs-comment">// overlapping.</span>
+  <span class="hljs-keyword">int</span> open; <span class="hljs-comment">//whether container is open.</span>
 } mu_Container;
 
 <span class="hljs-keyword">typedef</span> <span class="hljs-keyword">struct</span> {
-  mu_Font font;
-  mu_Vec2 size;
-  <span class="hljs-keyword">int</span> padding;
-  <span class="hljs-keyword">int</span> spacing;
-  <span class="hljs-keyword">int</span> indent;
-  <span class="hljs-keyword">int</span> title_height;
-  <span class="hljs-keyword">int</span> scrollbar_size;
-  <span class="hljs-keyword">int</span> thumb_size;
+  mu_Font font; <span class="hljs-comment">// font stype</span>
+  mu_Vec2 size; <span class="hljs-comment">//font size?</span>
+  <span class="hljs-keyword">int</span> padding; <span class="hljs-comment">// padding of buttons.</span>
+  <span class="hljs-keyword">int</span> spacing; <span class="hljs-comment">// text spacing?</span>
+  <span class="hljs-keyword">int</span> indent; <span class="hljs-comment">// ??</span>
+  <span class="hljs-keyword">int</span> title_height; <span class="hljs-comment">// height of title bar?</span>
+  <span class="hljs-keyword">int</span> scrollbar_size; <span class="hljs-comment">// scrollbar width?</span>
+  <span class="hljs-keyword">int</span> thumb_size; <span class="hljs-comment">// ???</span>
   mu_Color colors[MU_COLOR_MAX];
 } mu_Style;
 
@@ -230,41 +230,41 @@
   <span class="hljs-keyword">int</span> (*text_height)(mu_Font font);
   <span class="hljs-keyword">void</span> (*draw_frame)(mu_Context *ctx, mu_Rect rect, <span class="hljs-keyword">int</span> colorid);
   <span class="hljs-comment">/* core state */</span>
-  mu_Style _style;
-  mu_Style *style;
-  mu_Id hover;
-  mu_Id focus;
-  mu_Id last_id;
-  mu_Rect last_rect;
-  <span class="hljs-keyword">int</span> last_zindex;
-  <span class="hljs-keyword">int</span> updated_focus;
-  <span class="hljs-keyword">int</span> frame;
-  mu_Container *hover_root;
-  mu_Container *next_hover_root;
-  mu_Container *scroll_target;
-  <span class="hljs-keyword">char</span> number_edit_buf[MU_MAX_FMT];
-  mu_Id number_edit;
+  mu_Style _style; <span class="hljs-comment">// ?</span>
+  mu_Style *style; <span class="hljs-comment">// ?</span>
+  mu_Id hover; <span class="hljs-comment">// ?</span>
+  mu_Id focus; <span class="hljs-comment">// ?</span>
+  mu_Id last_id; <span class="hljs-comment">// last created id/hash.</span>
+  mu_Rect last_rect; <span class="hljs-comment">// last rect that was using during layout</span>
+  <span class="hljs-keyword">int</span> last_zindex; <span class="hljs-comment">// last z-index that was used. Is used to increase z-index of new containers and popups. </span>
+  <span class="hljs-keyword">int</span> updated_focus; <span class="hljs-comment">// ?</span>
+  <span class="hljs-keyword">int</span> frame; <span class="hljs-comment">// ?</span>
+  mu_Container *hover_root; <span class="hljs-comment">// ?</span>
+  mu_Container *next_hover_root; <span class="hljs-comment">// ?</span>
+  mu_Container *scroll_target; <span class="hljs-comment">// ?</span>
+  <span class="hljs-keyword">char</span> number_edit_buf[MU_MAX_FMT]; <span class="hljs-comment">// ?</span>
+  mu_Id number_edit; <span class="hljs-comment">// ?</span>
   <span class="hljs-comment">/* stacks */</span>
-  mu_stack(<span class="hljs-keyword">char</span>, MU_COMMANDLIST_SIZE) command_list;
-  mu_stack(mu_Container*, MU_ROOTLIST_SIZE) root_list;
-  mu_stack(mu_Container*, MU_CONTAINERSTACK_SIZE) container_stack;
-  mu_stack(mu_Rect, MU_CLIPSTACK_SIZE) clip_stack;
-  mu_stack(mu_Id, MU_IDSTACK_SIZE) id_stack;
-  mu_stack(mu_Layout, MU_LAYOUTSTACK_SIZE) layout_stack;
+  mu_stack(<span class="hljs-keyword">char</span>, MU_COMMANDLIST_SIZE) command_list; <span class="hljs-comment">// ?</span>
+  mu_stack(mu_Container*, MU_ROOTLIST_SIZE) root_list; <span class="hljs-comment">// ?</span>
+  mu_stack(mu_Container*, MU_CONTAINERSTACK_SIZE) container_stack; <span class="hljs-comment">// ?</span>
+  mu_stack(mu_Rect, MU_CLIPSTACK_SIZE) clip_stack; <span class="hljs-comment">// ?</span>
+  mu_stack(mu_Id, MU_IDSTACK_SIZE) id_stack; <span class="hljs-comment">// ?</span>
+  mu_stack(mu_Layout, MU_LAYOUTSTACK_SIZE) layout_stack; <span class="hljs-comment">// ?</span>
   <span class="hljs-comment">/* retained state pools */</span>
-  mu_PoolItem container_pool[MU_CONTAINERPOOL_SIZE];
-  mu_Container containers[MU_CONTAINERPOOL_SIZE];
-  mu_PoolItem treenode_pool[MU_TREENODEPOOL_SIZE];
+  mu_PoolItem container_pool[MU_CONTAINERPOOL_SIZE]; <span class="hljs-comment">// ?</span>
+  mu_Container containers[MU_CONTAINERPOOL_SIZE]; <span class="hljs-comment">// ?</span>
+  mu_PoolItem treenode_pool[MU_TREENODEPOOL_SIZE]; <span class="hljs-comment">// ?</span>
   <span class="hljs-comment">/* input state */</span>
-  mu_Vec2 mouse_pos;
-  mu_Vec2 last_mouse_pos;
-  mu_Vec2 mouse_delta;
-  mu_Vec2 scroll_delta;
-  <span class="hljs-keyword">int</span> mouse_down;
-  <span class="hljs-keyword">int</span> mouse_pressed;
-  <span class="hljs-keyword">int</span> key_down;
-  <span class="hljs-keyword">int</span> key_pressed;
-  <span class="hljs-keyword">char</span> input_text[<span class="hljs-number">32</span>];
+  mu_Vec2 mouse_pos; <span class="hljs-comment">// ?</span>
+  mu_Vec2 last_mouse_pos; <span class="hljs-comment">// ?</span>
+  mu_Vec2 mouse_delta; <span class="hljs-comment">// ?</span>
+  mu_Vec2 scroll_delta; <span class="hljs-comment">// /?</span>
+  <span class="hljs-keyword">int</span> mouse_down; <span class="hljs-comment">// whether mouse was clicked down this frame.</span>
+  <span class="hljs-keyword">int</span> mouse_pressed; <span class="hljs-comment">// whether mouse remains pressed down.</span>
+  <span class="hljs-keyword">int</span> key_down; <span class="hljs-comment">// whether key was clicked down this frame.</span>
+  <span class="hljs-keyword">int</span> key_pressed; <span class="hljs-comment">// whether key remains pressed.</span>
+  <span class="hljs-keyword">char</span> input_text[<span class="hljs-number">32</span>]; <span class="hljs-comment">// text that was sent as input in this frame.</span>
 };
 
 
@@ -272,8 +272,11 @@ mu_Vec2 mu_vec2(<span class="hljs-keyword">int</span> x, <span class="hljs-keywo
 mu_Rect mu_rect(<span class="hljs-keyword">int</span> x, <span class="hljs-keyword">int</span> y, <span class="hljs-keyword">int</span> w, <span class="hljs-keyword">int</span> h);
 mu_Color mu_color(<span class="hljs-keyword">int</span> r, <span class="hljs-keyword">int</span> g, <span class="hljs-keyword">int</span> b, <span class="hljs-keyword">int</span> a);
 
-<span class="hljs-keyword">void</span> mu_init(mu_Context *ctx);
-<span class="hljs-keyword">void</span> mu_begin(mu_Context *ctx);
+<span class="hljs-keyword">void</span> mu_init(mu_Context *ctx,
+             <span class="hljs-keyword">int</span> (*text_width)(mu_Font font, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *str, <span class="hljs-keyword">int</span> len),
+             <span class="hljs-keyword">int</span> (*text_height)(mu_Font font));
+
+<span class="hljs-keyword">void</span> mu_finalize_events_begin_draw(mu_Context *ctx);
 <span class="hljs-keyword">void</span> mu_end(mu_Context *ctx);
 <span class="hljs-keyword">void</span> mu_set_focus(mu_Context *ctx, mu_Id <span class="hljs-keyword">id</span>);
 mu_Id mu_get_id(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">void</span> *data, <span class="hljs-keyword">int</span> size);
@@ -285,21 +288,60 @@ mu_Rect mu_get_clip_rect(mu_Context *ctx);
 <span class="hljs-keyword">int</span> mu_check_clip(mu_Context *ctx, mu_Rect r);
 mu_Container* mu_get_current_container(mu_Context *ctx);
 mu_Container* mu_get_container(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *name);
-<span class="hljs-keyword">void</span> mu_bring_to_front(mu_Context *ctx, mu_Container *cnt);
+<span class="hljs-keyword">void</span> mu_bring_to_front(mu_Context *ctx, mu_Container *cnt);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-2">&#x00a7;</a>
+              </div>
+              <p>what are pools for?</p>
 
-<span class="hljs-keyword">int</span> mu_pool_init(mu_Context *ctx, mu_PoolItem *items, <span class="hljs-keyword">int</span> len, mu_Id <span class="hljs-keyword">id</span>);
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">int</span> mu_pool_init(mu_Context *ctx, mu_PoolItem *items, <span class="hljs-keyword">int</span> len, mu_Id <span class="hljs-keyword">id</span>);
 <span class="hljs-keyword">int</span> mu_pool_get(mu_Context *ctx, mu_PoolItem *items, <span class="hljs-keyword">int</span> len, mu_Id <span class="hljs-keyword">id</span>);
-<span class="hljs-keyword">void</span> mu_pool_update(mu_Context *ctx, mu_PoolItem *items, <span class="hljs-keyword">int</span> idx);
+<span class="hljs-keyword">void</span> mu_pool_update(mu_Context *ctx, mu_PoolItem *items, <span class="hljs-keyword">int</span> idx);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-3">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-3">&#x00a7;</a>
+              </div>
+              <p>input handling</p>
 
-<span class="hljs-keyword">void</span> mu_input_mousemove(mu_Context *ctx, <span class="hljs-keyword">int</span> x, <span class="hljs-keyword">int</span> y);
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">void</span> mu_input_mousemove(mu_Context *ctx, <span class="hljs-keyword">int</span> x, <span class="hljs-keyword">int</span> y);
 <span class="hljs-keyword">void</span> mu_input_mousedown(mu_Context *ctx, <span class="hljs-keyword">int</span> x, <span class="hljs-keyword">int</span> y, <span class="hljs-keyword">int</span> btn);
 <span class="hljs-keyword">void</span> mu_input_mouseup(mu_Context *ctx, <span class="hljs-keyword">int</span> x, <span class="hljs-keyword">int</span> y, <span class="hljs-keyword">int</span> btn);
 <span class="hljs-keyword">void</span> mu_input_scroll(mu_Context *ctx, <span class="hljs-keyword">int</span> x, <span class="hljs-keyword">int</span> y);
 <span class="hljs-keyword">void</span> mu_input_keydown(mu_Context *ctx, <span class="hljs-keyword">int</span> key);
 <span class="hljs-keyword">void</span> mu_input_keyup(mu_Context *ctx, <span class="hljs-keyword">int</span> key);
-<span class="hljs-keyword">void</span> mu_input_text(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *text);
+<span class="hljs-keyword">void</span> mu_input_text(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *text);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-4">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-4">&#x00a7;</a>
+              </div>
+              <p>emit commands from microui and handle</p>
 
-mu_Command* mu_push_command(mu_Context *ctx, <span class="hljs-keyword">int</span> type, <span class="hljs-keyword">int</span> size);
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>mu_Command* mu_push_command(mu_Context *ctx, <span class="hljs-keyword">int</span> type, <span class="hljs-keyword">int</span> size);
 <span class="hljs-keyword">int</span> mu_next_command(mu_Context *ctx, mu_Command **cmd);
 <span class="hljs-keyword">void</span> mu_set_clip(mu_Context *ctx, mu_Rect rect);
 <span class="hljs-keyword">void</span> mu_draw_rect(mu_Context *ctx, mu_Rect rect, mu_Color color);
@@ -327,9 +369,22 @@ mu_Rect mu_layout_next(mu_Context *ctx);
 <span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> mu_header(ctx, label)             mu_header_ex(ctx, label, 0)</span>
 <span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> mu_begin_treenode(ctx, label)     mu_begin_treenode_ex(ctx, label, 0)</span>
 <span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> mu_begin_window(ctx, title, rect) mu_begin_window_ex(ctx, title, rect, 0)</span>
-<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> mu_begin_panel(ctx, name)         mu_begin_panel_ex(ctx, name, 0)</span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> mu_begin_panel(ctx, name)         mu_begin_panel_ex(ctx, name, 0)</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-5">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-5">&#x00a7;</a>
+              </div>
+              <p>/ crate UI elements.</p>
 
-<span class="hljs-keyword">void</span> mu_text(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *text);
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">void</span> mu_text(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *text);
 <span class="hljs-keyword">void</span> mu_label(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *text);
 <span class="hljs-keyword">int</span> mu_button_ex(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *label, <span class="hljs-keyword">int</span> icon, <span class="hljs-keyword">int</span> opt);
 <span class="hljs-keyword">int</span> mu_checkbox(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *label, <span class="hljs-keyword">int</span> *state);

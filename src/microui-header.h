@@ -116,12 +116,12 @@ typedef struct { int x, y, w, h; } mu_Rect;
 typedef struct { unsigned char r, g, b, a; } mu_Color;
 typedef struct { mu_Id id; int last_update; } mu_PoolItem;
 
-typedef struct { int type, size; } mu_BaseCommand;
-typedef struct { mu_BaseCommand base; void *dst; } mu_JumpCommand;
-typedef struct { mu_BaseCommand base; mu_Rect rect; } mu_ClipCommand;
-typedef struct { mu_BaseCommand base; mu_Rect rect; mu_Color color; } mu_RectCommand;
-typedef struct { mu_BaseCommand base; mu_Font font; mu_Vec2 pos; mu_Color color; char str[1]; } mu_TextCommand;
-typedef struct { mu_BaseCommand base; mu_Rect rect; int id; mu_Color color; } mu_IconCommand;
+typedef struct { int type, size; } mu_BaseCommand; // what is size?
+typedef struct { mu_BaseCommand base; void *dst; } mu_JumpCommand; // what is jump?
+typedef struct { mu_BaseCommand base; mu_Rect rect; } mu_ClipCommand; // set clipping rectangle.
+typedef struct { mu_BaseCommand base; mu_Rect rect; mu_Color color; } mu_RectCommand; // draw a rectangle.
+typedef struct { mu_BaseCommand base; mu_Font font; mu_Vec2 pos; mu_Color color; char str[1]; } mu_TextCommand; // draw text
+typedef struct { mu_BaseCommand base; mu_Rect rect; int id; mu_Color color; } mu_IconCommand; // draw icon.
 
 typedef union {
   int type;
@@ -134,38 +134,38 @@ typedef union {
 } mu_Command;
 
 typedef struct {
-  mu_Rect body;
-  mu_Rect next;
-  mu_Vec2 position;
-  mu_Vec2 size;
-  mu_Vec2 max;
-  int widths[MU_MAX_WIDTHS];
-  int items;
-  int item_index;
-  int next_row;
-  int next_type;
-  int indent;
+  mu_Rect body; // ?
+  mu_Rect next; // ?
+  mu_Vec2 position; // the poisition of the item to be returned by a call to [mu_layout_next]
+  mu_Vec2 size; // ?
+  mu_Vec2 max; // ?
+  int widths[MU_MAX_WIDTHS]; // widths of each item in the layout.
+  int items; // number of items in the layout
+  int item_index; // the index of the item to be returned by a call to [mu_layout_next].
+  int next_row; // the `y` coordinate of the next row.
+  int next_type; // is RELATIVE or ABSOLUTE or 0
+  int indent; // ?
 } mu_Layout;
 
 typedef struct {
-  mu_Command *head, *tail;
-  mu_Rect rect;
+  mu_Command *head, *tail; // command vector.
+  mu_Rect rect; // what is rect v/s body?
   mu_Rect body;
-  mu_Vec2 content_size;
-  mu_Vec2 scroll;
-  int zindex;
-  int open;
+  mu_Vec2 content_size; // what is content_size?
+  mu_Vec2 scroll; // scroll of the container?
+  int zindex; // overlapping.
+  int open; //whether container is open.
 } mu_Container;
 
 typedef struct {
-  mu_Font font;
-  mu_Vec2 size;
-  int padding;
-  int spacing;
-  int indent;
-  int title_height;
-  int scrollbar_size;
-  int thumb_size;
+  mu_Font font; // font stype
+  mu_Vec2 size; //font size?
+  int padding; // padding of buttons.
+  int spacing; // text spacing?
+  int indent; // ??
+  int title_height; // height of title bar?
+  int scrollbar_size; // scrollbar width?
+  int thumb_size; // ???
   mu_Color colors[MU_COLOR_MAX];
 } mu_Style;
 
@@ -175,41 +175,41 @@ struct mu_Context {
   int (*text_height)(mu_Font font);
   void (*draw_frame)(mu_Context *ctx, mu_Rect rect, int colorid);
   /* core state */
-  mu_Style _style;
-  mu_Style *style;
-  mu_Id hover;
-  mu_Id focus;
-  mu_Id last_id;
-  mu_Rect last_rect;
-  int last_zindex;
-  int updated_focus;
-  int frame;
-  mu_Container *hover_root;
-  mu_Container *next_hover_root;
-  mu_Container *scroll_target;
-  char number_edit_buf[MU_MAX_FMT];
-  mu_Id number_edit;
+  mu_Style _style; // ?
+  mu_Style *style; // ?
+  mu_Id hover; // ?
+  mu_Id focus; // ?
+  mu_Id last_id; // last created id/hash.
+  mu_Rect last_rect; // last rect that was using during layout
+  int last_zindex; // last z-index that was used. Is used to increase z-index of new containers and popups. 
+  int updated_focus; // ?
+  int frame; // ?
+  mu_Container *hover_root; // ?
+  mu_Container *next_hover_root; // ?
+  mu_Container *scroll_target; // ?
+  char number_edit_buf[MU_MAX_FMT]; // ?
+  mu_Id number_edit; // ?
   /* stacks */
-  mu_stack(char, MU_COMMANDLIST_SIZE) command_list;
-  mu_stack(mu_Container*, MU_ROOTLIST_SIZE) root_list;
-  mu_stack(mu_Container*, MU_CONTAINERSTACK_SIZE) container_stack;
-  mu_stack(mu_Rect, MU_CLIPSTACK_SIZE) clip_stack;
-  mu_stack(mu_Id, MU_IDSTACK_SIZE) id_stack;
-  mu_stack(mu_Layout, MU_LAYOUTSTACK_SIZE) layout_stack;
+  mu_stack(char, MU_COMMANDLIST_SIZE) command_list; // ?
+  mu_stack(mu_Container*, MU_ROOTLIST_SIZE) root_list; // ?
+  mu_stack(mu_Container*, MU_CONTAINERSTACK_SIZE) container_stack; // ?
+  mu_stack(mu_Rect, MU_CLIPSTACK_SIZE) clip_stack; // ?
+  mu_stack(mu_Id, MU_IDSTACK_SIZE) id_stack; // ?
+  mu_stack(mu_Layout, MU_LAYOUTSTACK_SIZE) layout_stack; // ?
   /* retained state pools */
-  mu_PoolItem container_pool[MU_CONTAINERPOOL_SIZE];
-  mu_Container containers[MU_CONTAINERPOOL_SIZE];
-  mu_PoolItem treenode_pool[MU_TREENODEPOOL_SIZE];
+  mu_PoolItem container_pool[MU_CONTAINERPOOL_SIZE]; // ?
+  mu_Container containers[MU_CONTAINERPOOL_SIZE]; // ?
+  mu_PoolItem treenode_pool[MU_TREENODEPOOL_SIZE]; // ?
   /* input state */
-  mu_Vec2 mouse_pos;
-  mu_Vec2 last_mouse_pos;
-  mu_Vec2 mouse_delta;
-  mu_Vec2 scroll_delta;
-  int mouse_down;
-  int mouse_pressed;
-  int key_down;
-  int key_pressed;
-  char input_text[32];
+  mu_Vec2 mouse_pos; // ?
+  mu_Vec2 last_mouse_pos; // ?
+  mu_Vec2 mouse_delta; // ?
+  mu_Vec2 scroll_delta; // /?
+  int mouse_down; // whether mouse was clicked down this frame.
+  int mouse_pressed; // whether mouse remains pressed down.
+  int key_down; // whether key was clicked down this frame.
+  int key_pressed; // whether key remains pressed.
+  char input_text[32]; // text that was sent as input in this frame.
 };
 
 
@@ -217,8 +217,11 @@ mu_Vec2 mu_vec2(int x, int y);
 mu_Rect mu_rect(int x, int y, int w, int h);
 mu_Color mu_color(int r, int g, int b, int a);
 
-void mu_init(mu_Context *ctx);
-void mu_begin(mu_Context *ctx);
+void mu_init(mu_Context *ctx,
+             int (*text_width)(mu_Font font, const char *str, int len),
+             int (*text_height)(mu_Font font));
+
+void mu_finalize_events_begin_draw(mu_Context *ctx);
 void mu_end(mu_Context *ctx);
 void mu_set_focus(mu_Context *ctx, mu_Id id);
 mu_Id mu_get_id(mu_Context *ctx, const void *data, int size);
@@ -232,10 +235,12 @@ mu_Container* mu_get_current_container(mu_Context *ctx);
 mu_Container* mu_get_container(mu_Context *ctx, const char *name);
 void mu_bring_to_front(mu_Context *ctx, mu_Container *cnt);
 
+// what are pools for?
 int mu_pool_init(mu_Context *ctx, mu_PoolItem *items, int len, mu_Id id);
 int mu_pool_get(mu_Context *ctx, mu_PoolItem *items, int len, mu_Id id);
 void mu_pool_update(mu_Context *ctx, mu_PoolItem *items, int idx);
 
+// input handling
 void mu_input_mousemove(mu_Context *ctx, int x, int y);
 void mu_input_mousedown(mu_Context *ctx, int x, int y, int btn);
 void mu_input_mouseup(mu_Context *ctx, int x, int y, int btn);
@@ -244,6 +249,7 @@ void mu_input_keydown(mu_Context *ctx, int key);
 void mu_input_keyup(mu_Context *ctx, int key);
 void mu_input_text(mu_Context *ctx, const char *text);
 
+// emit commands from microui and handle
 mu_Command* mu_push_command(mu_Context *ctx, int type, int size);
 int mu_next_command(mu_Context *ctx, mu_Command **cmd);
 void mu_set_clip(mu_Context *ctx, mu_Rect rect);
@@ -274,6 +280,7 @@ void mu_update_control(mu_Context *ctx, mu_Id id, mu_Rect rect, int opt);
 #define mu_begin_window(ctx, title, rect) mu_begin_window_ex(ctx, title, rect, 0)
 #define mu_begin_panel(ctx, name)         mu_begin_panel_ex(ctx, name, 0)
 
+/// crate UI elements.
 void mu_text(mu_Context *ctx, const char *text);
 void mu_label(mu_Context *ctx, const char *text);
 int mu_button_ex(mu_Context *ctx, const char *label, int icon, int opt);

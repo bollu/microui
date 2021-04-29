@@ -147,11 +147,16 @@ ctx-&gt;text_height = text_height;
 <span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">draw_frame</span><span class="hljs-params">(mu_Context *ctx, mu_Rect rect, <span class="hljs-keyword">int</span> colorid)</span></span>;
 <span class="hljs-keyword">static</span> mu_Style default_style;
 
-<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_init</span><span class="hljs-params">(mu_Context *ctx)</span> </span>{
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_init</span><span class="hljs-params">(mu_Context *ctx,
+             <span class="hljs-keyword">int</span> (*text_width)(mu_Font font, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *str, <span class="hljs-keyword">int</span> len),
+             <span class="hljs-keyword">int</span> (*text_height)(mu_Font font))</span> </span>{
   <span class="hljs-built_in">memset</span>(ctx, <span class="hljs-number">0</span>, <span class="hljs-keyword">sizeof</span>(*ctx));
-  ctx-&gt;draw_frame = draw_frame;
+  ctx-&gt;draw_frame = draw_frame; <span class="hljs-comment">// why is this flexibility necessary?</span>
+  
   ctx-&gt;_style = default_style;
   ctx-&gt;style = &amp;ctx-&gt;_style;
+  ctx-&gt;text_width = text_width;
+  ctx-&gt;text_height = text_height;
 }</pre></div></div>
             
         </li>
@@ -208,7 +213,8 @@ main loop:
   <span class="hljs-number">2.</span> call `mu_begin()`
   <span class="hljs-number">3.</span> process ui
   <span class="hljs-number">4.</span> call `mu_end()`
-  <span class="hljs-number">5.</span> iterate commands <span class="hljs-keyword">using</span> `mu_command_next()`
+  <span class="hljs-number">5.</span> iterate commands/callbacks/events with
+       `mu_command_next()`
 </code></pre>
 
             </div>
@@ -249,7 +255,23 @@ if the same input event occurs in a single frame.</p>
 
 <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_input_mouseup</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">int</span> x, <span class="hljs-keyword">int</span> y, <span class="hljs-keyword">int</span> btn)</span> </span>{
   mu_input_mousemove(ctx, x, y);
-  ctx-&gt;mouse_down &amp;= ~btn;
+  ctx-&gt;mouse_down &amp;= ~btn;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-8">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-8">&#x00a7;</a>
+              </div>
+              <p>NOTE: vvv this code is NOT present, so mouse_pressed tracks a different state than mouse_down.
+ctx-&gt;mouse_pressed &amp;= ~btn;</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
 }
 
 
@@ -266,8 +288,23 @@ if the same input event occurs in a single frame.</p>
 
 
 <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_input_keyup</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">int</span> key)</span> </span>{
-  ctx-&gt;key_down &amp;= ~key;
-}
+  ctx-&gt;key_down &amp;= ~key;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-9">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-9">&#x00a7;</a>
+              </div>
+              <p>NOTE: vvv this code is NOT present, so key_pressed tracks a different state.
+ctx-&gt;key_pressed &amp;= ~key;</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>}
 
 
 <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_input_text</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *text)</span> </span>{
@@ -280,35 +317,132 @@ if the same input event occurs in a single frame.</p>
         </li>
         
         
-        <li id="section-8">
+        <li id="section-10">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-8">&#x00a7;</a>
+                <a class="ss" href="#section-10">&#x00a7;</a>
               </div>
-              <h2 id="2-call-mu_begin">2. Call <code>mu_begin</code></h2>
+              <h4 id="macros-for-push--pop">Macros for push &amp; pop</h4>
+<p>These macros are used to push and pop into a C stack data structure.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> push(stk, val) do {                                                 \
+    expect((stk).idx &lt; (int) (sizeof((stk).items) / sizeof(*(stk).items))); \
+    (stk).items[(stk).idx] = (val);                                         \
+    (stk).idx++; <span class="hljs-comment">/* incremented after incase `val` uses this value */</span>       \
+  } while (0)</span>
+
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> pop(stk) do {      \
+    expect((stk).idx &gt; 0); \
+    (stk).idx--;           \
+  } while (0)</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-11">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-11">&#x00a7;</a>
+              </div>
+              <h4 id="metadata-id-management">Metadata: ID management</h4>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+<span class="hljs-comment">/* 32bit fnv-1a hash */</span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> HASH_INITIAL 2166136261</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-12">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-12">&#x00a7;</a>
+              </div>
+              <p>Implementation of the <a href="https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function">Fowler-Noll-Vo</a> hash
+function.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+<span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">hash</span><span class="hljs-params">(mu_Id *hash, <span class="hljs-keyword">const</span> <span class="hljs-keyword">void</span> *data, <span class="hljs-keyword">int</span> size)</span> </span>{
+  <span class="hljs-keyword">const</span> <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">char</span> *p = data;
+  <span class="hljs-keyword">while</span> (size--) {
+    *hash = (*hash ^ *p++) * <span class="hljs-number">16777619</span>;
+  }
+}
+
+<span class="hljs-function">mu_Id <span class="hljs-title">mu_get_id</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">void</span> *data, <span class="hljs-keyword">int</span> size)</span> </span>{
+  <span class="hljs-keyword">int</span> idx = ctx-&gt;id_stack.idx; <span class="hljs-comment">// size of stack.</span>
+  mu_Id res = (idx &gt; <span class="hljs-number">0</span>) ? ctx-&gt;id_stack.items[idx - <span class="hljs-number">1</span>] : HASH_INITIAL;
+  hash(&amp;res, data, size);
+  ctx-&gt;last_id = res;
+  <span class="hljs-keyword">return</span> res;
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_push_id</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">void</span> *data, <span class="hljs-keyword">int</span> size)</span> </span>{
+  push(ctx-&gt;id_stack, mu_get_id(ctx, data, size));
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_pop_id</span><span class="hljs-params">(mu_Context *ctx)</span> </span>{
+  pop(ctx-&gt;id_stack);
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-13">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-13">&#x00a7;</a>
+              </div>
+              <h2 id="2-call-mu_finalize_events_begin_draw">2. Call <code>mu_finalize_events_begin_draw</code></h2>
 
             </div>
             
         </li>
         
         
-        <li id="section-9">
+        <li id="section-14">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-9">&#x00a7;</a>
+                <a class="ss" href="#section-14">&#x00a7;</a>
               </div>
-              <p>After handling the input the <code>mu_begin()</code> function must be called before
+              <p>After handling the input the <code>mu_finalize_events_begin_draw()</code> function must be called before
 processing your UI:</p>
-<pre><code class="language-c">mu_begin(ctx);
+<pre><code class="language-c">mu_finalize_events_begin_draw(ctx);
 </code></pre>
 
             </div>
             
             <div class="content"><div class='highlight'><pre>
-<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_begin</span><span class="hljs-params">(mu_Context *ctx)</span> </span>{
-  expect(ctx-&gt;text_width &amp;&amp; ctx-&gt;text_height);
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_finalize_events_begin_draw</span><span class="hljs-params">(mu_Context *ctx)</span> </span>{</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-15">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-15">&#x00a7;</a>
+              </div>
+              <p>check that text_width and text_height are initialized.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  expect(ctx-&gt;text_width &amp;&amp; ctx-&gt;text_height);
   ctx-&gt;command_list.idx = <span class="hljs-number">0</span>;
   ctx-&gt;root_list.idx = <span class="hljs-number">0</span>;
   ctx-&gt;scroll_target = <span class="hljs-literal">NULL</span>;
@@ -322,18 +456,19 @@ processing your UI:</p>
         </li>
         
         
-        <li id="section-10">
+        <li id="section-16">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-10">&#x00a7;</a>
+                <a class="ss" href="#section-16">&#x00a7;</a>
               </div>
               <p>Before any controls can be used we must begin a window using one of the
 <code>mu_begin_window...</code> or <code>mu_begin_popup...</code> functions. The <code>mu_begin_...</code> window
 functions return a truthy value if the window is open, if this is not the case
 we should not process the window any further. When we are finished processing
 the window’s ui the <code>mu_end_...</code> window function should be called.</p>
-<pre><code class="language-c"><span class="hljs-keyword">if</span> (mu_begin_window(ctx, <span class="hljs-string">&quot;My Window&quot;</span>, mu_rect(<span class="hljs-number">10</span>, <span class="hljs-number">10</span>, <span class="hljs-number">300</span>, <span class="hljs-number">400</span>))) {
+<pre><code class="language-c"><span class="hljs-keyword">if</span> (mu_begin_window(ctx, <span class="hljs-string">&quot;My Window&quot;</span>, 
+      mu_rect(<span class="hljs-number">10</span>, <span class="hljs-number">10</span>, <span class="hljs-number">300</span>, <span class="hljs-number">400</span>))) {
   <span class="hljs-comment">/* process ui here... */</span>
   mu_end_window(ctx);
 }
@@ -341,7 +476,198 @@ the window’s ui the <code>mu_end_...</code> window function should be called.<
 <p>It is safe to nest <code>mu_begin_window()</code> calls, this can be useful for things like
 context menus; the windows will still render separate from one another like
 normal.</p>
-<p>While inside a window block we can safely process controls. Controls that allow
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+<span class="hljs-function"><span class="hljs-keyword">static</span> mu_Container* <span class="hljs-title">get_container</span><span class="hljs-params">(mu_Context *ctx, mu_Id id, <span class="hljs-keyword">int</span> opt)</span></span>;
+<span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">mu_begin_window_ex_begin_root_container</span><span class="hljs-params">(mu_Context *ctx, mu_Container *cnt)</span></span>;
+<span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">push_container_body</span><span class="hljs-params">(  mu_Context *ctx, mu_Container *cnt, mu_Rect body, <span class="hljs-keyword">int</span> opt)</span></span>;
+<span class="hljs-function"><span class="hljs-keyword">static</span> mu_Layout* <span class="hljs-title">get_layout</span><span class="hljs-params">(mu_Context *ctx)</span></span>;
+
+
+
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">mu_begin_window_ex</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *title, mu_Rect rect, <span class="hljs-keyword">int</span> opt)</span> </span>{
+  mu_Rect body;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-17">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-17">&#x00a7;</a>
+              </div>
+              <p>hash object based on title.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  mu_Id id = mu_get_id(ctx, title, <span class="hljs-built_in">strlen</span>(title));</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-18">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-18">&#x00a7;</a>
+              </div>
+              <p>find the container for this, and raise it to the front.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  mu_Container *cnt = get_container(ctx, id, opt);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-19">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-19">&#x00a7;</a>
+              </div>
+              <p>if we can’t find a container, or it is closed, give up.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-keyword">if</span> (!cnt || !cnt-&gt;open) { <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>; }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-20">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-20">&#x00a7;</a>
+              </div>
+              <p>push the container ID onto the stack. (TODO: why?)</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  push(ctx-&gt;id_stack, id);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-21">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-21">&#x00a7;</a>
+              </div>
+              <p>if container is new(?), set its rect. (TODO: WHY?)</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-keyword">if</span> (cnt-&gt;rect.w == <span class="hljs-number">0</span>) { cnt-&gt;rect = rect; }
+
+  mu_begin_window_ex_begin_root_container(ctx, cnt);
+  rect = body = cnt-&gt;rect;
+
+  <span class="hljs-comment">/* draw frame */</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-22">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-22">&#x00a7;</a>
+              </div>
+              <p>if opt does NOT have MU_OPT_NOFRAME set:</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-keyword">if</span> (~opt &amp; MU_OPT_NOFRAME) {
+ctx-&gt;draw_frame(ctx, rect, MU_COLOR_WINDOWBG);
+  }
+
+  <span class="hljs-comment">/* do title bar */</span>
+  <span class="hljs-keyword">if</span> (~opt &amp; MU_OPT_NOTITLE) {
+    mu_Rect tr = rect;
+    tr.h = ctx-&gt;style-&gt;title_height;
+    ctx-&gt;draw_frame(ctx, tr, MU_COLOR_TITLEBG);
+
+    <span class="hljs-comment">/* do title text */</span>
+    <span class="hljs-keyword">if</span> (~opt &amp; MU_OPT_NOTITLE) {
+      mu_Id id = mu_get_id(ctx, <span class="hljs-string">&quot;!title&quot;</span>, <span class="hljs-number">6</span>);
+      mu_update_control(ctx, id, tr, opt);
+      mu_draw_control_text(ctx, title, tr, MU_COLOR_TITLETEXT, opt);
+      <span class="hljs-keyword">if</span> (id == ctx-&gt;focus &amp;&amp; ctx-&gt;mouse_down == MU_MOUSE_LEFT) {
+        cnt-&gt;rect.x += ctx-&gt;mouse_delta.x;
+        cnt-&gt;rect.y += ctx-&gt;mouse_delta.y;
+      }
+      body.y += tr.h;
+      body.h -= tr.h;
+    }
+
+    <span class="hljs-comment">/* do `close` button */</span>
+    <span class="hljs-keyword">if</span> (~opt &amp; MU_OPT_NOCLOSE) {
+      mu_Id id = mu_get_id(ctx, <span class="hljs-string">&quot;!close&quot;</span>, <span class="hljs-number">6</span>);
+      mu_Rect r = mu_rect(tr.x + tr.w - tr.h, tr.y, tr.h, tr.h);
+      tr.w -= r.w;
+      mu_draw_icon(ctx, MU_ICON_CLOSE, r, ctx-&gt;style-&gt;colors[MU_COLOR_TITLETEXT]);
+      mu_update_control(ctx, id, r, opt);
+      <span class="hljs-keyword">if</span> (ctx-&gt;mouse_pressed == MU_MOUSE_LEFT &amp;&amp; id == ctx-&gt;focus) {
+        cnt-&gt;open = <span class="hljs-number">0</span>;
+      }
+    }
+  }
+
+  push_container_body(ctx, cnt, body, opt);
+
+  <span class="hljs-comment">/* do `resize` handle */</span>
+  <span class="hljs-keyword">if</span> (~opt &amp; MU_OPT_NORESIZE) {
+    <span class="hljs-keyword">int</span> sz = ctx-&gt;style-&gt;title_height;
+    mu_Id id = mu_get_id(ctx, <span class="hljs-string">&quot;!resize&quot;</span>, <span class="hljs-number">7</span>);
+    mu_Rect r = mu_rect(rect.x + rect.w - sz, rect.y + rect.h - sz, sz, sz);
+    mu_update_control(ctx, id, r, opt);
+    <span class="hljs-keyword">if</span> (id == ctx-&gt;focus &amp;&amp; ctx-&gt;mouse_down == MU_MOUSE_LEFT) {
+      cnt-&gt;rect.w = mu_max(<span class="hljs-number">96</span>, cnt-&gt;rect.w + ctx-&gt;mouse_delta.x);
+      cnt-&gt;rect.h = mu_max(<span class="hljs-number">64</span>, cnt-&gt;rect.h + ctx-&gt;mouse_delta.y);
+    }
+  }
+
+  <span class="hljs-comment">/* resize to content size */</span>
+  <span class="hljs-keyword">if</span> (opt &amp; MU_OPT_AUTOSIZE) {
+    mu_Rect r = get_layout(ctx)-&gt;body;
+    cnt-&gt;rect.w = cnt-&gt;content_size.x + (cnt-&gt;rect.w - r.w);
+    cnt-&gt;rect.h = cnt-&gt;content_size.y + (cnt-&gt;rect.h - r.h);
+  }
+
+  <span class="hljs-comment">/* close if this is a popup window and elsewhere was clicked */</span>
+  <span class="hljs-keyword">if</span> (opt &amp; MU_OPT_POPUP &amp;&amp; ctx-&gt;mouse_pressed &amp;&amp; ctx-&gt;hover_root != cnt) {
+    cnt-&gt;open = <span class="hljs-number">0</span>;
+  }
+
+  mu_push_clip_rect(ctx, cnt-&gt;body);
+  <span class="hljs-keyword">return</span> MU_RES_ACTIVE;
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">end_root_container</span><span class="hljs-params">(mu_Context *ctx)</span></span>;
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_pop_clip_rect</span><span class="hljs-params">(mu_Context *ctx)</span></span>;
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_end_window</span><span class="hljs-params">(mu_Context *ctx)</span> </span>{
+  mu_pop_clip_rect(ctx);
+  end_root_container(ctx);
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-23">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-23">&#x00a7;</a>
+              </div>
+              <p>While inside a window block we can safely process controls. Controls that allow
 user interaction return a bitset of <code>MU_RES_...</code> values. Some controls — such
 as buttons — can only potentially return a single <code>MU_RES_...</code>, thus their
 return value can be treated as a boolean:</p>
@@ -387,7 +713,6 @@ to <code>NULL</code>. It is safe to iterate through the commands list any number
   }
 }
 </code></pre>
-<p>See the <a href="../demo"><code>demo</code></a> directory for a usage example.</p>
 <h2 id="layout-system">Layout System</h2>
 <p>The layout system is primarily based around <em>rows</em> — Each row
 can contain a number of <em>items</em> or <em>columns</em> each column can itself
@@ -442,7 +767,19 @@ followed by <code>mu_layout_set_next()</code> to return it:</p>
 <pre><code class="language-c">mu_Rect rect = mu_layout_next(ctx);
 mu_layout_set_next(ctx, rect, <span class="hljs-number">0</span>);
 </code></pre>
-<p>If you want to position controls arbitrarily inside a container the
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-24">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-24">&#x00a7;</a>
+              </div>
+              <p>If you want to position controls arbitrarily inside a container the
 <code>relative</code> argument of <code>mu_layout_set_next()</code> should be true:</p>
 <pre><code class="language-c"><span class="hljs-comment">/* place a (40, 40) sized button at (300, 300) inside the container: */</span>
 mu_layout_set_next(ctx, mu_rect(<span class="hljs-number">300</span>, <span class="hljs-number">300</span>, <span class="hljs-number">40</span>, <span class="hljs-number">40</span>), <span class="hljs-number">1</span>);
@@ -506,33 +843,7 @@ clicked increments that integer, could be implemented as such:</p>
             
             <div class="content"><div class='highlight'><pre>
 
-<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> unused(x) ((void) (x))</span></pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-11">
-            <div class="annotation">
-              
-              <div class="sswrap ">
-                <a class="ss" href="#section-11">&#x00a7;</a>
-              </div>
-              <h1 id="macros-for-pushing-and-popping">Macros for pushing and popping</h1>
-<p>These macros are used to push and pop repeated values.</p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>
-<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> push(stk, val) do {                                                 \
-    expect((stk).idx &lt; (int) (sizeof((stk).items) / sizeof(*(stk).items))); \
-    (stk).items[(stk).idx] = (val);                                         \
-    (stk).idx++; <span class="hljs-comment">/* incremented after incase `val` uses this value */</span>       \
-  } while (0)</span>
-
-<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> pop(stk) do {      \
-    expect((stk).idx &gt; 0); \
-    (stk).idx--;           \
-  } while (0)</span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> unused(x) ((void) (x))</span>
 
 
 <span class="hljs-keyword">static</span> mu_Rect unclipped_rect = { <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0x1000000</span>, <span class="hljs-number">0x1000000</span> };</pre></div></div>
@@ -540,11 +851,11 @@ clicked increments that integer, could be implemented as such:</p>
         </li>
         
         
-        <li id="section-12">
+        <li id="section-25">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-12">&#x00a7;</a>
+                <a class="ss" href="#section-25">&#x00a7;</a>
               </div>
               <h1 id="vectors">Vectors</h1>
 <p>these are used to define graphics primitives.</p>
@@ -575,11 +886,11 @@ clicked increments that integer, could be implemented as such:</p>
         </li>
         
         
-        <li id="section-13">
+        <li id="section-26">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-13">&#x00a7;</a>
+                <a class="ss" href="#section-26">&#x00a7;</a>
               </div>
               <h1 id="expand">Expand</h1>
 <p>expands a rectangle by <code>n</code> in all directions</p>
@@ -587,7 +898,6 @@ clicked increments that integer, could be implemented as such:</p>
             </div>
             
             <div class="content"><div class='highlight'><pre>
-
 <span class="hljs-function"><span class="hljs-keyword">static</span> mu_Rect <span class="hljs-title">expand_rect</span><span class="hljs-params">(mu_Rect rect, <span class="hljs-keyword">int</span> n)</span> </span>{
   <span class="hljs-keyword">return</span> mu_rect(rect.x - n, rect.y - n, rect.w + n * <span class="hljs-number">2</span>, rect.h + n * <span class="hljs-number">2</span>);
 }</pre></div></div>
@@ -595,11 +905,11 @@ clicked increments that integer, could be implemented as such:</p>
         </li>
         
         
-        <li id="section-14">
+        <li id="section-27">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-14">&#x00a7;</a>
+                <a class="ss" href="#section-27">&#x00a7;</a>
               </div>
               <h1 id="intersect">Intersect</h1>
 <p>Intersects two rectangles.</p>
@@ -620,43 +930,29 @@ clicked increments that integer, could be implemented as such:</p>
         </li>
         
         
-        <li id="section-15">
+        <li id="section-28">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-15">&#x00a7;</a>
+                <a class="ss" href="#section-28">&#x00a7;</a>
               </div>
-              <p>Overlap</p>
+              <p>Overlap
+Check if vector lies in rectangle</p>
 
             </div>
             
-        </li>
-        
-        
-        <li id="section-16">
-            <div class="annotation">
-              
-              <div class="sswrap ">
-                <a class="ss" href="#section-16">&#x00a7;</a>
-              </div>
-              <p>Check if vector lies in rectangle</p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>
-
-<span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">int</span> <span class="hljs-title">rect_overlaps_vec2</span><span class="hljs-params">(mu_Rect r, mu_Vec2 p)</span> </span>{
+            <div class="content"><div class='highlight'><pre><span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">int</span> <span class="hljs-title">rect_overlaps_vec2</span><span class="hljs-params">(mu_Rect r, mu_Vec2 p)</span> </span>{
   <span class="hljs-keyword">return</span> p.x &gt;= r.x &amp;&amp; p.x &lt; r.x + r.w &amp;&amp; p.y &gt;= r.y &amp;&amp; p.y &lt; r.y + r.h;
 }</pre></div></div>
             
         </li>
         
         
-        <li id="section-17">
+        <li id="section-29">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-17">&#x00a7;</a>
+                <a class="ss" href="#section-29">&#x00a7;</a>
               </div>
               <p>Draw Frame
 Draw a frame with an optional border.</p>
@@ -679,44 +975,29 @@ Draw a frame with an optional border.</p>
         </li>
         
         
-        <li id="section-18">
+        <li id="section-30">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-18">&#x00a7;</a>
-              </div>
-              <p>Init
-Initialize the library.</p>
-
-            </div>
-            
-        </li>
-        
-        
-        <li id="section-19">
-            <div class="annotation">
-              
-              <div class="sswrap ">
-                <a class="ss" href="#section-19">&#x00a7;</a>
+                <a class="ss" href="#section-30">&#x00a7;</a>
               </div>
               <p>Compare Z index
-Retuurn difference of Z indeces between <code>a</code> and <code>b</code>.</p>
+Retuurn difference of Z indeces between containers <code>a</code> and <code>b</code>.</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>
-<span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">int</span> <span class="hljs-title">compare_zindex</span><span class="hljs-params">(<span class="hljs-keyword">const</span> <span class="hljs-keyword">void</span> *a, <span class="hljs-keyword">const</span> <span class="hljs-keyword">void</span> *b)</span> </span>{
+            <div class="content"><div class='highlight'><pre><span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">int</span> <span class="hljs-title">compare_zindex</span><span class="hljs-params">(<span class="hljs-keyword">const</span> <span class="hljs-keyword">void</span> *a, <span class="hljs-keyword">const</span> <span class="hljs-keyword">void</span> *b)</span> </span>{
   <span class="hljs-keyword">return</span> (*(mu_Container**) a)-&gt;zindex - (*(mu_Container**) b)-&gt;zindex;
 }</pre></div></div>
             
         </li>
         
         
-        <li id="section-20">
+        <li id="section-31">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-20">&#x00a7;</a>
+                <a class="ss" href="#section-31">&#x00a7;</a>
               </div>
               <h1 id="end">End</h1>
 
@@ -725,11 +1006,11 @@ Retuurn difference of Z indeces between <code>a</code> and <code>b</code>.</p>
         </li>
         
         
-        <li id="section-21">
+        <li id="section-32">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-21">&#x00a7;</a>
+                <a class="ss" href="#section-32">&#x00a7;</a>
               </div>
               
             </div>
@@ -737,11 +1018,11 @@ Retuurn difference of Z indeces between <code>a</code> and <code>b</code>.</p>
         </li>
         
         
-        <li id="section-22">
+        <li id="section-33">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-22">&#x00a7;</a>
+                <a class="ss" href="#section-33">&#x00a7;</a>
               </div>
               <p>Check that all stacks have been flushed, apply scrolling.</p>
 
@@ -813,35 +1094,6 @@ Retuurn difference of Z indeces between <code>a</code> and <code>b</code>.</p>
 }
 
 
-<span class="hljs-comment">/* 32bit fnv-1a hash */</span>
-<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> HASH_INITIAL 2166136261</span>
-
-<span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">hash</span><span class="hljs-params">(mu_Id *hash, <span class="hljs-keyword">const</span> <span class="hljs-keyword">void</span> *data, <span class="hljs-keyword">int</span> size)</span> </span>{
-  <span class="hljs-keyword">const</span> <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">char</span> *p = data;
-  <span class="hljs-keyword">while</span> (size--) {
-    *hash = (*hash ^ *p++) * <span class="hljs-number">16777619</span>;
-  }
-}
-
-
-<span class="hljs-function">mu_Id <span class="hljs-title">mu_get_id</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">void</span> *data, <span class="hljs-keyword">int</span> size)</span> </span>{
-  <span class="hljs-keyword">int</span> idx = ctx-&gt;id_stack.idx;
-  mu_Id res = (idx &gt; <span class="hljs-number">0</span>) ? ctx-&gt;id_stack.items[idx - <span class="hljs-number">1</span>] : HASH_INITIAL;
-  hash(&amp;res, data, size);
-  ctx-&gt;last_id = res;
-  <span class="hljs-keyword">return</span> res;
-}
-
-
-<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_push_id</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">void</span> *data, <span class="hljs-keyword">int</span> size)</span> </span>{
-  push(ctx-&gt;id_stack, mu_get_id(ctx, data, size));
-}
-
-
-<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_pop_id</span><span class="hljs-params">(mu_Context *ctx)</span> </span>{
-  pop(ctx-&gt;id_stack);
-}
-
 
 <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_push_clip_rect</span><span class="hljs-params">(mu_Context *ctx, mu_Rect rect)</span> </span>{
   mu_Rect last = mu_get_clip_rect(ctx);
@@ -878,10 +1130,22 @@ Retuurn difference of Z indeces between <code>a</code> and <code>b</code>.</p>
   layout.max = mu_vec2(<span class="hljs-number">-0x1000000</span>, <span class="hljs-number">-0x1000000</span>);
   push(ctx-&gt;layout_stack, layout);
   mu_layout_row(ctx, <span class="hljs-number">1</span>, &amp;width, <span class="hljs-number">0</span>);
-}
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-34">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-34">&#x00a7;</a>
+              </div>
+              <p>return top of layout stack</p>
 
-
-<span class="hljs-function"><span class="hljs-keyword">static</span> mu_Layout* <span class="hljs-title">get_layout</span><span class="hljs-params">(mu_Context *ctx)</span> </span>{
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-function"><span class="hljs-keyword">static</span> mu_Layout* <span class="hljs-title">get_layout</span><span class="hljs-params">(mu_Context *ctx)</span> </span>{
   <span class="hljs-keyword">return</span> &amp;ctx-&gt;layout_stack.items[ctx-&gt;layout_stack.idx - <span class="hljs-number">1</span>];
 }
 
@@ -908,8 +1172,22 @@ Retuurn difference of Z indeces between <code>a</code> and <code>b</code>.</p>
   mu_Container *cnt;
   <span class="hljs-comment">/* try to get existing container from pool */</span>
   <span class="hljs-keyword">int</span> idx = mu_pool_get(ctx, ctx-&gt;container_pool, MU_CONTAINERPOOL_SIZE, id);
-  <span class="hljs-keyword">if</span> (idx &gt;= <span class="hljs-number">0</span>) {
-    <span class="hljs-keyword">if</span> (ctx-&gt;containers[idx].open || ~opt &amp; MU_OPT_CLOSED) {
+  <span class="hljs-keyword">if</span> (idx &gt;= <span class="hljs-number">0</span>) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-35">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-35">&#x00a7;</a>
+              </div>
+              <p>TODO: why is this || ?</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">if</span> (ctx-&gt;containers[idx].open || ~opt &amp; MU_OPT_CLOSED) {
       mu_pool_update(ctx, ctx-&gt;container_pool, idx);
     }
     <span class="hljs-keyword">return</span> &amp;ctx-&gt;containers[idx];
@@ -919,8 +1197,22 @@ Retuurn difference of Z indeces between <code>a</code> and <code>b</code>.</p>
   idx = mu_pool_init(ctx, ctx-&gt;container_pool, MU_CONTAINERPOOL_SIZE, id);
   cnt = &amp;ctx-&gt;containers[idx];
   <span class="hljs-built_in">memset</span>(cnt, <span class="hljs-number">0</span>, <span class="hljs-keyword">sizeof</span>(*cnt));
-  cnt-&gt;open = <span class="hljs-number">1</span>;
-  mu_bring_to_front(ctx, cnt);
+  cnt-&gt;open = <span class="hljs-number">1</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-36">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-36">&#x00a7;</a>
+              </div>
+              <p>bring container to front by increasing z-index.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  mu_bring_to_front(ctx, cnt);
   <span class="hljs-keyword">return</span> cnt;
 }
 
@@ -940,12 +1232,27 @@ Retuurn difference of Z indeces between <code>a</code> and <code>b</code>.</p>
 ** pool
 **============================================================================*/</span>
 
+
 <span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">mu_pool_init</span><span class="hljs-params">(mu_Context *ctx, mu_PoolItem *items, <span class="hljs-keyword">int</span> len, mu_Id id)</span> </span>{
-  <span class="hljs-keyword">int</span> i, n = <span class="hljs-number">-1</span>, f = ctx-&gt;frame;
-  <span class="hljs-keyword">for</span> (i = <span class="hljs-number">0</span>; i &lt; len; i++) {
-    <span class="hljs-keyword">if</span> (items[i].last_update &lt; f) {
-      f = items[i].last_update;
-      n = i;
+  <span class="hljs-keyword">int</span> n = <span class="hljs-number">-1</span>, f = ctx-&gt;frame;
+  <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; len; i++) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-37">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-37">&#x00a7;</a>
+              </div>
+              <p>find <em>rightmost</em> old slot and reuse it.
+TODO: why <em>rightmost</em>? </p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">if</span> (items[i].last_update &lt; f) {
+      f = items[i].last_update; n = i;
     }
   }
   expect(n &gt; <span class="hljs-number">-1</span>);
@@ -988,7 +1295,7 @@ Retuurn difference of Z indeces between <code>a</code> and <code>b</code>.</p>
 
 <span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">mu_next_command</span><span class="hljs-params">(mu_Context *ctx, mu_Command **cmd)</span> </span>{
   <span class="hljs-keyword">if</span> (*cmd) {
-    *cmd = (mu_Command*) (((<span class="hljs-keyword">char</span>*) *cmd) + (*cmd)-&gt;base.size);
+    *cmd = (mu_Command*) (((<span class="hljs-keyword">char</span>*) *cmd) + (*cmd)-&gt;base.size); <span class="hljs-comment">// WTF?</span>
   } <span class="hljs-keyword">else</span> {
     *cmd = (mu_Command*) ctx-&gt;command_list.items;
   }
@@ -1028,11 +1335,11 @@ Retuurn difference of Z indeces between <code>a</code> and <code>b</code>.</p>
         </li>
         
         
-        <li id="section-23">
+        <li id="section-38">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-23">&#x00a7;</a>
+                <a class="ss" href="#section-38">&#x00a7;</a>
               </div>
               <h1 id="box">Box</h1>
 <p>Draw a box around the rectangle.</p>
@@ -1088,7 +1395,22 @@ Retuurn difference of Z indeces between <code>a</code> and <code>b</code>.</p>
 
 <span class="hljs-comment">/*============================================================================
 ** layout
-**============================================================================*/</span>
+**============================================================================*/</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-39">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-39">&#x00a7;</a>
+              </div>
+              <p>Should we have begin/end for row as well as column?</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
 
 <span class="hljs-class"><span class="hljs-keyword">enum</span> {</span> RELATIVE = <span class="hljs-number">1</span>, ABSOLUTE = <span class="hljs-number">2</span> };
 
@@ -1099,19 +1421,60 @@ Retuurn difference of Z indeces between <code>a</code> and <code>b</code>.</p>
 
 
 <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_layout_end_column</span><span class="hljs-params">(mu_Context *ctx)</span> </span>{
-  mu_Layout *a, *b;
-  b = get_layout(ctx);
+  mu_Layout *a, *b;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-40">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-40">&#x00a7;</a>
+              </div>
+              <p>top of layout stack; the column we had begun</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  b = get_layout(ctx);
   pop(ctx-&gt;layout_stack);
   <span class="hljs-comment">/* inherit position/next_row/max from child layout if they are greater */</span>
-  a = get_layout(ctx);
-  a-&gt;position.x = mu_max(a-&gt;position.x, b-&gt;position.x + b-&gt;body.x - a-&gt;body.x);
+  a = get_layout(ctx);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-41">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-41">&#x00a7;</a>
+              </div>
+              <p>TODO: think about these computations.
+The idea is to reflow the parent of the column, based on the column data.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  a-&gt;position.x = mu_max(a-&gt;position.x, b-&gt;position.x + b-&gt;body.x - a-&gt;body.x);
   a-&gt;next_row = mu_max(a-&gt;next_row, b-&gt;next_row + b-&gt;body.y - a-&gt;body.y);
   a-&gt;max.x = mu_max(a-&gt;max.x, b-&gt;max.x);
   a-&gt;max.y = mu_max(a-&gt;max.y, b-&gt;max.y);
-}
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-42">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-42">&#x00a7;</a>
+              </div>
+              <p>create a new layout row.</p>
 
-
-<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_layout_row</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">int</span> items, <span class="hljs-keyword">const</span> <span class="hljs-keyword">int</span> *widths, <span class="hljs-keyword">int</span> height)</span> </span>{
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_layout_row</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">int</span> items, <span class="hljs-keyword">const</span> <span class="hljs-keyword">int</span> *widths, <span class="hljs-keyword">int</span> height)</span> </span>{
   mu_Layout *layout = get_layout(ctx);
   <span class="hljs-keyword">if</span> (widths) {
     expect(items &lt;= MU_MAX_WIDTHS);
@@ -1121,15 +1484,39 @@ Retuurn difference of Z indeces between <code>a</code> and <code>b</code>.</p>
   layout-&gt;position = mu_vec2(layout-&gt;indent, layout-&gt;next_row);
   layout-&gt;size.y = height;
   layout-&gt;item_index = <span class="hljs-number">0</span>;
-}
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-43">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-43">&#x00a7;</a>
+              </div>
+              <p>set layout width.</p>
 
-
-<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_layout_width</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">int</span> width)</span> </span>{
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_layout_width</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">int</span> width)</span> </span>{
   get_layout(ctx)-&gt;size.x = width;
-}
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-44">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-44">&#x00a7;</a>
+              </div>
+              <p>set layout height.</p>
 
-
-<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_layout_height</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">int</span> height)</span> </span>{
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_layout_height</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">int</span> height)</span> </span>{
   get_layout(ctx)-&gt;size.y = height;
 }
 
@@ -1138,37 +1525,128 @@ Retuurn difference of Z indeces between <code>a</code> and <code>b</code>.</p>
   mu_Layout *layout = get_layout(ctx);
   layout-&gt;next = r;
   layout-&gt;next_type = relative ? RELATIVE : ABSOLUTE;
-}
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-45">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-45">&#x00a7;</a>
+              </div>
+              <p>key function that performs layouting!</p>
 
-
-<span class="hljs-function">mu_Rect <span class="hljs-title">mu_layout_next</span><span class="hljs-params">(mu_Context *ctx)</span> </span>{
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-function">mu_Rect <span class="hljs-title">mu_layout_next</span><span class="hljs-params">(mu_Context *ctx)</span> </span>{
   mu_Layout *layout = get_layout(ctx);
   mu_Style *style = ctx-&gt;style;
-  mu_Rect res;
+  mu_Rect res;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-46">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-46">&#x00a7;</a>
+              </div>
+              <p>no idea what it means for next_type to be unset!</p>
 
-  <span class="hljs-keyword">if</span> (layout-&gt;next_type) {
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-keyword">if</span> (layout-&gt;next_type) {
     <span class="hljs-comment">/* handle rect set by `mu_layout_set_next` */</span>
     <span class="hljs-keyword">int</span> type = layout-&gt;next_type;
     layout-&gt;next_type = <span class="hljs-number">0</span>;
-    res = layout-&gt;next;
-    <span class="hljs-keyword">if</span> (type == ABSOLUTE) { <span class="hljs-keyword">return</span> (ctx-&gt;last_rect = res); }
+    res = layout-&gt;next;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-47">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-47">&#x00a7;</a>
+              </div>
+              <p>TODO: we don’t increment item_index?</p>
 
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">if</span> (type == ABSOLUTE) { <span class="hljs-keyword">return</span> (ctx-&gt;last_rect = res); }
   } <span class="hljs-keyword">else</span> {
+
     <span class="hljs-comment">/* handle next row */</span>
     <span class="hljs-keyword">if</span> (layout-&gt;item_index == layout-&gt;items) {
       mu_layout_row(ctx, layout-&gt;items, <span class="hljs-literal">NULL</span>, layout-&gt;size.y);
-    }
+    }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-48">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-48">&#x00a7;</a>
+              </div>
+              <p>position</p>
 
-    <span class="hljs-comment">/* position */</span>
-    res.x = layout-&gt;position.x;
-    res.y = layout-&gt;position.y;
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    res.x = layout-&gt;position.x;
+    res.y = layout-&gt;position.y;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-49">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-49">&#x00a7;</a>
+              </div>
+              <p>size </p>
 
-    <span class="hljs-comment">/* size */</span>
-    res.w = layout-&gt;items &gt; <span class="hljs-number">0</span> ? layout-&gt;widths[layout-&gt;item_index] : layout-&gt;size.x;
-    res.h = layout-&gt;size.y;
-    <span class="hljs-keyword">if</span> (res.w == <span class="hljs-number">0</span>) { res.w = style-&gt;size.x + style-&gt;padding * <span class="hljs-number">2</span>; }
-    <span class="hljs-keyword">if</span> (res.h == <span class="hljs-number">0</span>) { res.h = style-&gt;size.y + style-&gt;padding * <span class="hljs-number">2</span>; }
-    <span class="hljs-keyword">if</span> (res.w &lt;  <span class="hljs-number">0</span>) { res.w += layout-&gt;body.w - res.x + <span class="hljs-number">1</span>; }
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    res.w = layout-&gt;items &gt; <span class="hljs-number">0</span> ? layout-&gt;widths[layout-&gt;item_index] : layout-&gt;size.x;
+    res.h = layout-&gt;size.y;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-50">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-50">&#x00a7;</a>
+              </div>
+              <p>if zero, then auto-size??</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">if</span> (res.w == <span class="hljs-number">0</span>) { res.w = style-&gt;size.x + style-&gt;padding * <span class="hljs-number">2</span>; }
+    <span class="hljs-keyword">if</span> (res.h == <span class="hljs-number">0</span>) { res.h = style-&gt;size.y + style-&gt;padding * <span class="hljs-number">2</span>; }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-51">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-51">&#x00a7;</a>
+              </div>
+              <p>negative width, height is interpreted as: leave this much room from the border.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">if</span> (res.w &lt;  <span class="hljs-number">0</span>) { res.w += layout-&gt;body.w - res.x + <span class="hljs-number">1</span>; }
     <span class="hljs-keyword">if</span> (res.h &lt;  <span class="hljs-number">0</span>) { res.h += layout-&gt;body.h - res.y + <span class="hljs-number">1</span>; }
 
     layout-&gt;item_index++;
@@ -1203,10 +1681,23 @@ Retuurn difference of Z indeces between <code>a</code> and <code>b</code>.</p>
     <span class="hljs-keyword">if</span> (ctx-&gt;container_stack.items[i]-&gt;head) { <span class="hljs-keyword">break</span>; }
   }
   <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;
-}
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-52">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-52">&#x00a7;</a>
+              </div>
+              <p>draw a frame which colors based on focus/hover. Hence, a “control frame”,
+such as a button.</p>
 
-
-<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_draw_control_frame</span><span class="hljs-params">(mu_Context *ctx, mu_Id id, mu_Rect rect,
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_draw_control_frame</span><span class="hljs-params">(mu_Context *ctx, mu_Id id, mu_Rect rect,
   <span class="hljs-keyword">int</span> colorid, <span class="hljs-keyword">int</span> opt)</span>
 </span>{
   <span class="hljs-keyword">if</span> (opt &amp; MU_OPT_NOFRAME) { <span class="hljs-keyword">return</span>; }
@@ -1239,10 +1730,30 @@ Retuurn difference of Z indeces between <code>a</code> and <code>b</code>.</p>
   <span class="hljs-keyword">return</span> rect_overlaps_vec2(rect, ctx-&gt;mouse_pos) &amp;&amp;
     rect_overlaps_vec2(mu_get_clip_rect(ctx), ctx-&gt;mouse_pos) &amp;&amp;
     in_hover_root(ctx);
-}
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-53">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-53">&#x00a7;</a>
+              </div>
+              <p>update the state of the context relative to the object <code>id</code>, which inhabits location
+<code>rect</code>. this updates:</p>
+<ul>
+<li>ctx-&gt;updated_focus: whether focus was updated.</li>
+<li>ctx-&gt;hover: whether this element is being hovered on.</li>
+<li>mu_set_focus(): if this element should be focused, which sets:</li>
+<li>ctx-&gt;focus: the ID of the item being focused.</li>
+<li>ctx-&gt;updated_focus: whether focus has been updated.</li>
+</ul>
 
-
-<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_update_control</span><span class="hljs-params">(mu_Context *ctx, mu_Id id, mu_Rect rect, <span class="hljs-keyword">int</span> opt)</span> </span>{
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_update_control</span><span class="hljs-params">(mu_Context *ctx, mu_Id id, mu_Rect rect, <span class="hljs-keyword">int</span> opt)</span> </span>{
   <span class="hljs-keyword">int</span> mouseover = mu_mouse_over(ctx, rect);
 
   <span class="hljs-keyword">if</span> (ctx-&gt;focus == id) { ctx-&gt;updated_focus = <span class="hljs-number">1</span>; }
@@ -1303,7 +1814,7 @@ Retuurn difference of Z indeces between <code>a</code> and <code>b</code>.</p>
   mu_update_control(ctx, id, r, opt);
   <span class="hljs-comment">/* handle click */</span>
   <span class="hljs-keyword">if</span> (ctx-&gt;mouse_pressed == MU_MOUSE_LEFT &amp;&amp; ctx-&gt;focus == id) {
-    res |= MU_RES_SUBMIT;
+    res |= MU_RES_SUBMIT; <span class="hljs-comment">// submit a text box if attached.</span>
   }
   <span class="hljs-comment">/* draw */</span>
   mu_draw_control_frame(ctx, id, r, MU_COLOR_BUTTON, opt);
@@ -1612,13 +2123,40 @@ Retuurn difference of Z indeces between <code>a</code> and <code>b</code>.</p>
   <span class="hljs-keyword">if</span> (~opt &amp; MU_OPT_NOSCROLL) { scrollbars(ctx, cnt, &amp;body); }
   push_layout(ctx, expand_rect(body, -ctx-&gt;style-&gt;padding), cnt-&gt;scroll);
   cnt-&gt;body = body;
-}
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-54">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-54">&#x00a7;</a>
+              </div>
+              <p>helper for mu_begin_window to create a root container.</p>
 
-
-<span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">begin_root_container</span><span class="hljs-params">(mu_Context *ctx, mu_Container *cnt)</span> </span>{
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">mu_begin_window_ex_begin_root_container</span><span class="hljs-params">(mu_Context *ctx, mu_Container *cnt)</span> </span>{
+  <span class="hljs-comment">/* push container into stack of containers */</span>
   push(ctx-&gt;container_stack, cnt);
-  <span class="hljs-comment">/* push container to roots list and push head command */</span>
-  push(ctx-&gt;root_list, cnt);
+  <span class="hljs-comment">/* push container to roots list and push head command */</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-55">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-55">&#x00a7;</a>
+              </div>
+              <p>TODO: what is jump?</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  push(ctx-&gt;root_list, cnt);
   cnt-&gt;head = push_jump(ctx, <span class="hljs-literal">NULL</span>);
   <span class="hljs-comment">/* set as hover root if the mouse is overlapping this container and it has a
   ** higher zindex than the current hover root */</span>
@@ -1629,7 +2167,9 @@ Retuurn difference of Z indeces between <code>a</code> and <code>b</code>.</p>
   }
   <span class="hljs-comment">/* clipping is reset here in case a root-container is made within
   ** another root-containers&#x27;s begin/end block; this prevents the inner
-  ** root-container being clipped to the outer */</span>
+  ** root-container being clipped to the outer.
+  ** <span class="hljs-doctag">TODO:</span> why would someone create a root container inside another root container?
+  */</span>
   push(ctx-&gt;clip_stack, unclipped_rect);
 }
 
@@ -1646,89 +2186,6 @@ Retuurn difference of Z indeces between <code>a</code> and <code>b</code>.</p>
 }
 
 
-<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">mu_begin_window_ex</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *title, mu_Rect rect, <span class="hljs-keyword">int</span> opt)</span> </span>{
-  mu_Rect body;
-  mu_Id id = mu_get_id(ctx, title, <span class="hljs-built_in">strlen</span>(title));
-  mu_Container *cnt = get_container(ctx, id, opt);
-  <span class="hljs-keyword">if</span> (!cnt || !cnt-&gt;open) { <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>; }
-  push(ctx-&gt;id_stack, id);
-
-  <span class="hljs-keyword">if</span> (cnt-&gt;rect.w == <span class="hljs-number">0</span>) { cnt-&gt;rect = rect; }
-  begin_root_container(ctx, cnt);
-  rect = body = cnt-&gt;rect;
-
-  <span class="hljs-comment">/* draw frame */</span>
-  <span class="hljs-keyword">if</span> (~opt &amp; MU_OPT_NOFRAME) {
-    ctx-&gt;draw_frame(ctx, rect, MU_COLOR_WINDOWBG);
-  }
-
-  <span class="hljs-comment">/* do title bar */</span>
-  <span class="hljs-keyword">if</span> (~opt &amp; MU_OPT_NOTITLE) {
-    mu_Rect tr = rect;
-    tr.h = ctx-&gt;style-&gt;title_height;
-    ctx-&gt;draw_frame(ctx, tr, MU_COLOR_TITLEBG);
-
-    <span class="hljs-comment">/* do title text */</span>
-    <span class="hljs-keyword">if</span> (~opt &amp; MU_OPT_NOTITLE) {
-      mu_Id id = mu_get_id(ctx, <span class="hljs-string">&quot;!title&quot;</span>, <span class="hljs-number">6</span>);
-      mu_update_control(ctx, id, tr, opt);
-      mu_draw_control_text(ctx, title, tr, MU_COLOR_TITLETEXT, opt);
-      <span class="hljs-keyword">if</span> (id == ctx-&gt;focus &amp;&amp; ctx-&gt;mouse_down == MU_MOUSE_LEFT) {
-        cnt-&gt;rect.x += ctx-&gt;mouse_delta.x;
-        cnt-&gt;rect.y += ctx-&gt;mouse_delta.y;
-      }
-      body.y += tr.h;
-      body.h -= tr.h;
-    }
-
-    <span class="hljs-comment">/* do `close` button */</span>
-    <span class="hljs-keyword">if</span> (~opt &amp; MU_OPT_NOCLOSE) {
-      mu_Id id = mu_get_id(ctx, <span class="hljs-string">&quot;!close&quot;</span>, <span class="hljs-number">6</span>);
-      mu_Rect r = mu_rect(tr.x + tr.w - tr.h, tr.y, tr.h, tr.h);
-      tr.w -= r.w;
-      mu_draw_icon(ctx, MU_ICON_CLOSE, r, ctx-&gt;style-&gt;colors[MU_COLOR_TITLETEXT]);
-      mu_update_control(ctx, id, r, opt);
-      <span class="hljs-keyword">if</span> (ctx-&gt;mouse_pressed == MU_MOUSE_LEFT &amp;&amp; id == ctx-&gt;focus) {
-        cnt-&gt;open = <span class="hljs-number">0</span>;
-      }
-    }
-  }
-
-  push_container_body(ctx, cnt, body, opt);
-
-  <span class="hljs-comment">/* do `resize` handle */</span>
-  <span class="hljs-keyword">if</span> (~opt &amp; MU_OPT_NORESIZE) {
-    <span class="hljs-keyword">int</span> sz = ctx-&gt;style-&gt;title_height;
-    mu_Id id = mu_get_id(ctx, <span class="hljs-string">&quot;!resize&quot;</span>, <span class="hljs-number">7</span>);
-    mu_Rect r = mu_rect(rect.x + rect.w - sz, rect.y + rect.h - sz, sz, sz);
-    mu_update_control(ctx, id, r, opt);
-    <span class="hljs-keyword">if</span> (id == ctx-&gt;focus &amp;&amp; ctx-&gt;mouse_down == MU_MOUSE_LEFT) {
-      cnt-&gt;rect.w = mu_max(<span class="hljs-number">96</span>, cnt-&gt;rect.w + ctx-&gt;mouse_delta.x);
-      cnt-&gt;rect.h = mu_max(<span class="hljs-number">64</span>, cnt-&gt;rect.h + ctx-&gt;mouse_delta.y);
-    }
-  }
-
-  <span class="hljs-comment">/* resize to content size */</span>
-  <span class="hljs-keyword">if</span> (opt &amp; MU_OPT_AUTOSIZE) {
-    mu_Rect r = get_layout(ctx)-&gt;body;
-    cnt-&gt;rect.w = cnt-&gt;content_size.x + (cnt-&gt;rect.w - r.w);
-    cnt-&gt;rect.h = cnt-&gt;content_size.y + (cnt-&gt;rect.h - r.h);
-  }
-
-  <span class="hljs-comment">/* close if this is a popup window and elsewhere was clicked */</span>
-  <span class="hljs-keyword">if</span> (opt &amp; MU_OPT_POPUP &amp;&amp; ctx-&gt;mouse_pressed &amp;&amp; ctx-&gt;hover_root != cnt) {
-    cnt-&gt;open = <span class="hljs-number">0</span>;
-  }
-
-  mu_push_clip_rect(ctx, cnt-&gt;body);
-  <span class="hljs-keyword">return</span> MU_RES_ACTIVE;
-}
-
-
-<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_end_window</span><span class="hljs-params">(mu_Context *ctx)</span> </span>{
-  mu_pop_clip_rect(ctx);
-  end_root_container(ctx);
-}
 
 
 <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">mu_open_popup</span><span class="hljs-params">(mu_Context *ctx, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *name)</span> </span>{
