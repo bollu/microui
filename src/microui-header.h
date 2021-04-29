@@ -196,7 +196,7 @@ struct mu_Context {
   mu_stack(char, MU_COMMANDLIST_SIZE) command_list; // list of draw commands to be interpreted by the client.
   mu_stack(mu_Container*, MU_ROOTLIST_SIZE) root_list; // ?
   mu_stack(mu_Container*, MU_CONTAINERSTACK_SIZE) container_stack; // ?
-  mu_stack(mu_Rect, MU_CLIPSTACK_SIZE) clip_stack; // ?
+  mu_stack(mu_Rect, MU_CLIPSTACK_SIZE) clip_stack; // stack of clip rects for nested containers.
   mu_stack(mu_Id, MU_IDSTACK_SIZE) id_stack; // ?
   mu_stack(mu_Layout, MU_LAYOUTSTACK_SIZE) layout_stack; // ?
   /* retained state pools */

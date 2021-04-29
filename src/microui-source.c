@@ -639,10 +639,7 @@ static int compare_zindex(const void *a, const void *b) {
 // End
 // =====
 
-// Check that all stacks have been flushed, apply scrolling.
-
-
-
+// Check that all stacks have been flushed, apply scrolling and events.
 void mu_end(mu_Context *ctx) {
   int i, n;
   /* check stacks */
@@ -651,17 +648,17 @@ void mu_end(mu_Context *ctx) {
   expect(ctx->id_stack.idx        == 0);
   expect(ctx->layout_stack.idx    == 0);
 
-  /* handle scroll input */
+  // handle scroll input
   if (ctx->scroll_target) {
     ctx->scroll_target->scroll.x += ctx->scroll_delta.x;
     ctx->scroll_target->scroll.y += ctx->scroll_delta.y;
   }
 
-  /* unset focus if focus id was not touched this frame */
+  // unset focus if focus id was not touched this frame
   if (!ctx->updated_focus) { ctx->focus = 0; }
   ctx->updated_focus = 0;
 
-  /* bring hover root to front if mouse was pressed */
+  // bring hover root to front if mouse was pressed
   if (ctx->mouse_pressed && ctx->next_hover_root &&
       ctx->next_hover_root->zindex < ctx->last_zindex &&
       ctx->next_hover_root->zindex >= 0
@@ -669,18 +666,19 @@ void mu_end(mu_Context *ctx) {
     mu_bring_to_front(ctx, ctx->next_hover_root);
   }
 
-  /* reset input state */
+  // reset input state
   ctx->key_pressed = 0;
   ctx->input_text[0] = '\0';
   ctx->mouse_pressed = 0;
   ctx->scroll_delta = mu_vec2(0, 0);
   ctx->last_mouse_pos = ctx->mouse_pos;
 
-  /* sort root containers by zindex */
+  // sort root containers by zindex
   n = ctx->root_list.idx;
   qsort(ctx->root_list.items, n, sizeof(mu_Container*), compare_zindex);
 
-  /* set root container jump commands */
+  // TODO: what is a jump command?
+  // sset root container jump commands
   for (i = 0; i < n; i++) {
     mu_Container *cnt = ctx->root_list.items[i];
     /* if this is the first container then make the first command jump to it.
@@ -855,12 +853,16 @@ mu_Command* mu_push_command(mu_Context *ctx, int type, int size) {
 }
 
 
+// return 1 if there is a command to be processsed, and 0 if all commands are exhausted.
 int mu_next_command(mu_Context *ctx, mu_Command **cmd) {
   if (*cmd) {
-    *cmd = (mu_Command*) (((char*) *cmd) + (*cmd)->base.size); // WTF?
+    // go to the next location in memory where we have a command.
+    *cmd = (mu_Command*) (((char*) *cmd) + (*cmd)->base.size);
   } else {
+    // start at first command.
     *cmd = (mu_Command*) ctx->command_list.items;
   }
+  // follow jump commands till we reach a non-jump command, or reach end of list.
   while ((char*) *cmd != ctx->command_list.items + ctx->command_list.idx) {
     if ((*cmd)->type != MU_COMMAND_JUMP) { return 1; }
     *cmd = (*cmd)->jump.dst;
@@ -1414,6 +1416,7 @@ int mu_header_ex(mu_Context *ctx, const char *label, int opt) {
 }
 
 
+// what precisely is a treenode?
 int mu_begin_treenode_ex(mu_Context *ctx, const char *label, int opt) {
   int res = header(ctx, label, 1, opt);
   if (res & MU_RES_ACTIVE) {
@@ -1514,6 +1517,7 @@ static void mu_begin_window_ex_begin_root_container(mu_Context *ctx, mu_Containe
   ** root-container being clipped to the outer.
   ** TODO: why would someone create a root container inside another root container?
   */
+  // this resets the clip stack. `mu_push_clip_rect` pushes a sequence of clips..
   push(ctx->clip_stack, unclipped_rect);
 }
 
@@ -1555,6 +1559,7 @@ void mu_end_popup(mu_Context *ctx) {
 }
 
 
+// What is a panel, versus a window, versus a container?
 void mu_begin_panel_ex(mu_Context *ctx, const char *name, int opt) {
   mu_Container *cnt;
   mu_push_id(ctx, name, strlen(name));
