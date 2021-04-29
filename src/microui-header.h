@@ -209,8 +209,8 @@ struct mu_Context {
   mu_Vec2 mouse_delta; // ?
   mu_Vec2 scroll_delta; // /?
   int mouse_down; // whether mouse was clicked down this frame.
-  int mouse_pressed; // whether mouse remains pressed down.
-  int key_down; // whether key was clicked down this frame.
+  int mouse_pressed; // whether mouse remains pressed down. Should be MU_MOUSE_* or 0.
+  int key_down; // whether key was clicked down this frame. should be MU_KEY_* or 0.
   int key_pressed; // whether key remains pressed.
   char input_text[32]; // text that was sent as input in this frame.
 };

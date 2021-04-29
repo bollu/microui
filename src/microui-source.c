@@ -1066,6 +1066,8 @@ mu_Rect mu_layout_next(mu_Context *ctx) {
 ** controls
 **============================================================================*/
 
+// check if hover_root is currently being drawn. This is checked
+// by walking the container stack, looking for our element.
 static int in_hover_root(mu_Context *ctx) {
   int i = ctx->container_stack.idx;
   while (i--) {
@@ -1089,6 +1091,7 @@ void mu_draw_control_frame(mu_Context *ctx, mu_Id id, mu_Rect rect,
 }
 
 
+// draw text clipped to the rectangle.
 void mu_draw_control_text(mu_Context *ctx, const char *str, mu_Rect rect,
   int colorid, int opt)
 {
