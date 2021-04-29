@@ -171,7 +171,10 @@
 <span class="hljs-keyword">typedef</span> <span class="hljs-keyword">struct</span> { <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">char</span> r, g, b, a; } mu_Color;
 <span class="hljs-keyword">typedef</span> <span class="hljs-keyword">struct</span> { mu_Id <span class="hljs-keyword">id</span>; <span class="hljs-keyword">int</span> last_update; } mu_PoolItem;
 
-<span class="hljs-keyword">typedef</span> <span class="hljs-keyword">struct</span> { <span class="hljs-keyword">int</span> type, size; } mu_BaseCommand; <span class="hljs-comment">// what is size?</span>
+<span class="hljs-keyword">typedef</span> <span class="hljs-keyword">struct</span> { 
+  <span class="hljs-keyword">int</span> type; <span class="hljs-comment">// type is one of `MU_COMMAND_*`;</span>
+  <span class="hljs-keyword">int</span> size; <span class="hljs-comment">// size is the size of memory occupied by the derived classes.</span>
+  } mu_BaseCommand;
 <span class="hljs-keyword">typedef</span> <span class="hljs-keyword">struct</span> { mu_BaseCommand base; <span class="hljs-keyword">void</span> *dst; } mu_JumpCommand; <span class="hljs-comment">// what is jump?</span>
 <span class="hljs-keyword">typedef</span> <span class="hljs-keyword">struct</span> { mu_BaseCommand base; mu_Rect rect; } mu_ClipCommand; <span class="hljs-comment">// set clipping rectangle.</span>
 <span class="hljs-keyword">typedef</span> <span class="hljs-keyword">struct</span> { mu_BaseCommand base; mu_Rect rect; mu_Color color; } mu_RectCommand; <span class="hljs-comment">// draw a rectangle.</span>
@@ -227,9 +230,22 @@
 <span class="hljs-keyword">struct</span> mu_Context {
   <span class="hljs-comment">/* callbacks */</span>
   <span class="hljs-keyword">int</span> (*text_width)(mu_Font font, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *str, <span class="hljs-keyword">int</span> len);
-  <span class="hljs-keyword">int</span> (*text_height)(mu_Font font);
-  <span class="hljs-keyword">void</span> (*draw_frame)(mu_Context *ctx, mu_Rect rect, <span class="hljs-keyword">int</span> colorid);
-  <span class="hljs-comment">/* core state */</span>
+  <span class="hljs-keyword">int</span> (*text_height)(mu_Font font);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-2">&#x00a7;</a>
+              </div>
+              <p>void (*draw_frame)(mu_Context *ctx, mu_Rect rect, int colorid);</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-comment">/* core state */</span>
   mu_Style _style; <span class="hljs-comment">// ?</span>
   mu_Style *style; <span class="hljs-comment">// ?</span>
   mu_Id hover; <span class="hljs-comment">// ?</span>
@@ -245,7 +261,7 @@
   <span class="hljs-keyword">char</span> number_edit_buf[MU_MAX_FMT]; <span class="hljs-comment">// ?</span>
   mu_Id number_edit; <span class="hljs-comment">// ?</span>
   <span class="hljs-comment">/* stacks */</span>
-  mu_stack(<span class="hljs-keyword">char</span>, MU_COMMANDLIST_SIZE) command_list; <span class="hljs-comment">// ?</span>
+  mu_stack(<span class="hljs-keyword">char</span>, MU_COMMANDLIST_SIZE) command_list; <span class="hljs-comment">// list of draw commands to be interpreted by the client.</span>
   mu_stack(mu_Container*, MU_ROOTLIST_SIZE) root_list; <span class="hljs-comment">// ?</span>
   mu_stack(mu_Container*, MU_CONTAINERSTACK_SIZE) container_stack; <span class="hljs-comment">// ?</span>
   mu_stack(mu_Rect, MU_CLIPSTACK_SIZE) clip_stack; <span class="hljs-comment">// ?</span>
@@ -293,11 +309,11 @@ mu_Container* mu_get_container(mu_Context *ctx, <span class="hljs-keyword">const
         </li>
         
         
-        <li id="section-2">
+        <li id="section-3">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-2">&#x00a7;</a>
+                <a class="ss" href="#section-3">&#x00a7;</a>
               </div>
               <p>what are pools for?</p>
 
@@ -310,11 +326,11 @@ mu_Container* mu_get_container(mu_Context *ctx, <span class="hljs-keyword">const
         </li>
         
         
-        <li id="section-3">
+        <li id="section-4">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-3">&#x00a7;</a>
+                <a class="ss" href="#section-4">&#x00a7;</a>
               </div>
               <p>input handling</p>
 
@@ -331,11 +347,11 @@ mu_Container* mu_get_container(mu_Context *ctx, <span class="hljs-keyword">const
         </li>
         
         
-        <li id="section-4">
+        <li id="section-5">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-4">&#x00a7;</a>
+                <a class="ss" href="#section-5">&#x00a7;</a>
               </div>
               <p>emit commands from microui and handle</p>
 
@@ -343,7 +359,7 @@ mu_Container* mu_get_container(mu_Context *ctx, <span class="hljs-keyword">const
             
             <div class="content"><div class='highlight'><pre>mu_Command* mu_push_command(mu_Context *ctx, <span class="hljs-keyword">int</span> type, <span class="hljs-keyword">int</span> size);
 <span class="hljs-keyword">int</span> mu_next_command(mu_Context *ctx, mu_Command **cmd);
-<span class="hljs-keyword">void</span> mu_set_clip(mu_Context *ctx, mu_Rect rect);
+<span class="hljs-keyword">void</span> mu_push_clip(mu_Context *ctx, mu_Rect rect);
 <span class="hljs-keyword">void</span> mu_draw_rect(mu_Context *ctx, mu_Rect rect, mu_Color color);
 <span class="hljs-keyword">void</span> mu_draw_box(mu_Context *ctx, mu_Rect rect, mu_Color color);
 <span class="hljs-keyword">void</span> mu_draw_text(mu_Context *ctx, mu_Font font, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *str, <span class="hljs-keyword">int</span> len, mu_Vec2 pos, mu_Color color);
@@ -374,11 +390,11 @@ mu_Rect mu_layout_next(mu_Context *ctx);
         </li>
         
         
-        <li id="section-5">
+        <li id="section-6">
             <div class="annotation">
               
               <div class="sswrap ">
-                <a class="ss" href="#section-5">&#x00a7;</a>
+                <a class="ss" href="#section-6">&#x00a7;</a>
               </div>
               <p>/ crate UI elements.</p>
 

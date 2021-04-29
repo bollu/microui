@@ -66,7 +66,7 @@ void mu_init(mu_Context *ctx,
              int (*text_width)(mu_Font font, const char *str, int len),
              int (*text_height)(mu_Font font)) {
   memset(ctx, 0, sizeof(*ctx));
-  ctx->draw_frame = draw_frame; // why is this flexibility necessary?
+  // ctx->draw_frame = draw_frame; // why is this flexibility necessary?
   
   ctx->_style = default_style;
   ctx->style = &ctx->_style;
@@ -291,14 +291,14 @@ int mu_begin_window_ex(mu_Context *ctx, const char *title, mu_Rect rect, int opt
   /* draw frame */
   // if opt does NOT have MU_OPT_NOFRAME set:
   if (~opt & MU_OPT_NOFRAME) {
-ctx->draw_frame(ctx, rect, MU_COLOR_WINDOWBG);
+    draw_frame(ctx, rect, MU_COLOR_WINDOWBG);
   }
 
   /* do title bar */
   if (~opt & MU_OPT_NOTITLE) {
     mu_Rect tr = rect;
     tr.h = ctx->style->title_height;
-    ctx->draw_frame(ctx, tr, MU_COLOR_TITLEBG);
+    draw_frame(ctx, tr, MU_COLOR_TITLEBG);
 
     /* do title text */
     if (~opt & MU_OPT_NOTITLE) {
@@ -615,10 +615,7 @@ static int rect_overlaps_vec2(mu_Rect r, mu_Vec2 p) {
 }
 
 
-// Draw Frame
-// Draw a frame with an optional border.
-
-
+// Draw Frame: draw a frame, with an optional border.
 static void draw_frame(mu_Context *ctx, mu_Rect rect, int colorid) {
   mu_draw_rect(ctx, rect, ctx->style->colors[colorid]);
   if (colorid == MU_COLOR_SCROLLBASE  ||
@@ -880,13 +877,13 @@ static mu_Command* push_jump(mu_Context *ctx, mu_Command *dst) {
 }
 
 
-void mu_set_clip(mu_Context *ctx, mu_Rect rect) {
+void mu_push_clip(mu_Context *ctx, mu_Rect rect) {
   mu_Command *cmd;
   cmd = mu_push_command(ctx, MU_COMMAND_CLIP, sizeof(mu_ClipCommand));
   cmd->clip.rect = rect;
 }
 
-
+// queue the command to draw a rectangle.
 void mu_draw_rect(mu_Context *ctx, mu_Rect rect, mu_Color color) {
   mu_Command *cmd;
   rect = intersect_rects(rect, mu_get_clip_rect(ctx));
@@ -916,7 +913,7 @@ void mu_draw_text(mu_Context *ctx, mu_Font font, const char *str, int len,
     pos.x, pos.y, ctx->text_width(font, str, len), ctx->text_height(font));
   int clipped = mu_check_clip(ctx, rect);
   if (clipped == MU_CLIP_ALL ) { return; }
-  if (clipped == MU_CLIP_PART) { mu_set_clip(ctx, mu_get_clip_rect(ctx)); }
+  if (clipped == MU_CLIP_PART) { mu_push_clip(ctx, mu_get_clip_rect(ctx)); }
   /* add command */
   if (len < 0) { len = strlen(str); }
   cmd = mu_push_command(ctx, MU_COMMAND_TEXT, sizeof(mu_TextCommand) + len);
@@ -926,7 +923,7 @@ void mu_draw_text(mu_Context *ctx, mu_Font font, const char *str, int len,
   cmd->text.color = color;
   cmd->text.font = font;
   /* reset clipping if it was set */
-  if (clipped) { mu_set_clip(ctx, unclipped_rect); }
+  if (clipped) { mu_push_clip(ctx, unclipped_rect); }
 }
 
 
@@ -935,14 +932,14 @@ void mu_draw_icon(mu_Context *ctx, int id, mu_Rect rect, mu_Color color) {
   /* do clip command if the rect isn't fully contained within the cliprect */
   int clipped = mu_check_clip(ctx, rect);
   if (clipped == MU_CLIP_ALL ) { return; }
-  if (clipped == MU_CLIP_PART) { mu_set_clip(ctx, mu_get_clip_rect(ctx)); }
+  if (clipped == MU_CLIP_PART) { mu_push_clip(ctx, mu_get_clip_rect(ctx)); }
   /* do icon command */
   cmd = mu_push_command(ctx, MU_COMMAND_ICON, sizeof(mu_IconCommand));
   cmd->icon.id = id;
   cmd->icon.rect = rect;
   cmd->icon.color = color;
   /* reset clipping if it was set */
-  if (clipped) { mu_set_clip(ctx, unclipped_rect); }
+  if (clipped) { mu_push_clip(ctx, unclipped_rect); }
 }
 
 
@@ -1086,7 +1083,7 @@ void mu_draw_control_frame(mu_Context *ctx, mu_Id id, mu_Rect rect,
 {
   if (opt & MU_OPT_NOFRAME) { return; }
   colorid += (ctx->focus == id) ? 2 : (ctx->hover == id) ? 1 : 0;
-  ctx->draw_frame(ctx, rect, colorid);
+  draw_frame(ctx, rect, colorid);
 }
 
 
@@ -1397,7 +1394,7 @@ static int header(mu_Context *ctx, const char *label, int istreenode, int opt) {
 
   /* draw */
   if (istreenode) {
-    if (ctx->hover == id) { ctx->draw_frame(ctx, r, MU_COLOR_BUTTONHOVER); }
+    if (ctx->hover == id) { draw_frame(ctx, r, MU_COLOR_BUTTONHOVER); }
   } else {
     mu_draw_control_frame(ctx, id, r, MU_COLOR_BUTTON, 0);
   }
@@ -1456,11 +1453,11 @@ void mu_end_treenode(mu_Context *ctx) {
       cnt->scroll.y = mu_clamp(cnt->scroll.y, 0, maxscroll);                \
                                                                             \
       /* draw base and thumb */                                             \
-      ctx->draw_frame(ctx, base, MU_COLOR_SCROLLBASE);                      \
+      draw_frame(ctx, base, MU_COLOR_SCROLLBASE);                      \
       thumb = base;                                                         \
       thumb.h = mu_max(ctx->style->thumb_size, base.h * b->h / cs.y);       \
       thumb.y += cnt->scroll.y * (base.h - thumb.h) / maxscroll;            \
-      ctx->draw_frame(ctx, thumb, MU_COLOR_SCROLLTHUMB);                    \
+      draw_frame(ctx, thumb, MU_COLOR_SCROLLTHUMB);                    \
                                                                             \
       /* set this as the scroll_target (will get scrolled on mousewheel) */ \
       /* if the mouse is over it */                                         \
@@ -1564,7 +1561,7 @@ void mu_begin_panel_ex(mu_Context *ctx, const char *name, int opt) {
   cnt = get_container(ctx, ctx->last_id, opt);
   cnt->rect = mu_layout_next(ctx);
   if (~opt & MU_OPT_NOFRAME) {
-    ctx->draw_frame(ctx, cnt->rect, MU_COLOR_PANELBG);
+    draw_frame(ctx, cnt->rect, MU_COLOR_PANELBG);
   }
   push(ctx->container_stack, cnt);
   push_container_body(ctx, cnt, cnt->rect, opt);

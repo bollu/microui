@@ -116,7 +116,10 @@ typedef struct { int x, y, w, h; } mu_Rect;
 typedef struct { unsigned char r, g, b, a; } mu_Color;
 typedef struct { mu_Id id; int last_update; } mu_PoolItem;
 
-typedef struct { int type, size; } mu_BaseCommand; // what is size?
+typedef struct { 
+  int type; // type is one of `MU_COMMAND_*`;
+  int size; // size is the size of memory occupied by the derived classes.
+  } mu_BaseCommand;
 typedef struct { mu_BaseCommand base; void *dst; } mu_JumpCommand; // what is jump?
 typedef struct { mu_BaseCommand base; mu_Rect rect; } mu_ClipCommand; // set clipping rectangle.
 typedef struct { mu_BaseCommand base; mu_Rect rect; mu_Color color; } mu_RectCommand; // draw a rectangle.
@@ -173,7 +176,7 @@ struct mu_Context {
   /* callbacks */
   int (*text_width)(mu_Font font, const char *str, int len);
   int (*text_height)(mu_Font font);
-  void (*draw_frame)(mu_Context *ctx, mu_Rect rect, int colorid);
+  // void (*draw_frame)(mu_Context *ctx, mu_Rect rect, int colorid);
   /* core state */
   mu_Style _style; // ?
   mu_Style *style; // ?
@@ -190,7 +193,7 @@ struct mu_Context {
   char number_edit_buf[MU_MAX_FMT]; // ?
   mu_Id number_edit; // ?
   /* stacks */
-  mu_stack(char, MU_COMMANDLIST_SIZE) command_list; // ?
+  mu_stack(char, MU_COMMANDLIST_SIZE) command_list; // list of draw commands to be interpreted by the client.
   mu_stack(mu_Container*, MU_ROOTLIST_SIZE) root_list; // ?
   mu_stack(mu_Container*, MU_CONTAINERSTACK_SIZE) container_stack; // ?
   mu_stack(mu_Rect, MU_CLIPSTACK_SIZE) clip_stack; // ?
@@ -252,7 +255,7 @@ void mu_input_text(mu_Context *ctx, const char *text);
 // emit commands from microui and handle
 mu_Command* mu_push_command(mu_Context *ctx, int type, int size);
 int mu_next_command(mu_Context *ctx, mu_Command **cmd);
-void mu_set_clip(mu_Context *ctx, mu_Rect rect);
+void mu_push_clip(mu_Context *ctx, mu_Rect rect);
 void mu_draw_rect(mu_Context *ctx, mu_Rect rect, mu_Color color);
 void mu_draw_box(mu_Context *ctx, mu_Rect rect, mu_Color color);
 void mu_draw_text(mu_Context *ctx, mu_Font font, const char *str, int len, mu_Vec2 pos, mu_Color color);
